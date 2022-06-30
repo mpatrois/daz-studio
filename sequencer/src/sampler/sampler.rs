@@ -6,6 +6,8 @@ use crate::sampler::sample_voice::SamplerVoice;
 const MAX_NOTES : usize = 32;
 
 pub struct Sampler {
+    // {todo} Try to avoid using `pub` everywhere and use methods for
+    // encapsulation.
     pub samples: Vec<Sample>,
     voices: Vec<SamplerVoice>,
     nb_actives_notes: usize,
@@ -27,6 +29,7 @@ impl Sampler {
             voices.push(SamplerVoice::new(sample_rate))
         }
 
+        // {todo} The `return` keyword is useless here.
         return Sampler {
             voices: voices,
             nb_actives_notes: 0,
@@ -45,10 +48,12 @@ impl Sampler {
 impl Processor for Sampler {
 
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
+        // {todo} Use an iterator instead of an index.
         for sample_idx in 0..self.samples.len() {
             if self.samples[sample_idx].apply_to_note(midi_note) {
                 if self.nb_actives_notes < MAX_NOTES - 1 {
                     let note_to_active = self.nb_actives_notes as usize;
+                    // {todo} Avoid using [] with the same index multiple times.
                     self.voices[note_to_active].adsr.attack = self.attack;
                     self.voices[note_to_active].adsr.decay = self.decay;
                     self.voices[note_to_active].adsr.sustain = self.sustain;
@@ -65,6 +70,7 @@ impl Processor for Sampler {
     }
    
     fn note_off(&mut self, midi_note: u8) {
+        // {todo} Use an iterator instead of an index.
         for i in 0..self.voices.len() {
             if self.voices[i].note_id == midi_note && self.voices[i].active {
                 self.voices[i].stop_note();
@@ -72,13 +78,15 @@ impl Processor for Sampler {
         }
     }
 
-    fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    fn process(&mut self, outputs: *mut f32, num_samples: usize, _nb_channels: usize) {
+        // {todo} Use an iterator instead of an index.
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if !self.voices[i].is_ended() {
-                self.voices[i].render_next_block(outputs, num_samples, nb_channels);
+                self.voices[i].render_next_block(outputs, num_samples);
             }
         }
+        // {todo} Use an iterator instead of an index.
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if self.voices[i].is_ended() {
@@ -90,6 +98,7 @@ impl Processor for Sampler {
     }
 
     fn clear_notes_events(&mut self) {
+        // {todo} Use an iterator instead of an index.
         for i in 0..self.nb_actives_notes {
             self.voices[i].stop_note();
         }
@@ -97,6 +106,7 @@ impl Processor for Sampler {
     }
 
     fn get_notes_events(&mut self) -> &Vec<MidiMessage> {
+        // {todo} The `return` keyword is useless here.
         return &self.note_events;
     }
 
@@ -105,6 +115,7 @@ impl Processor for Sampler {
     }
 
     fn is_armed(&self) -> bool {
+        // {todo} The `return` keyword is useless here.
         return self.im_armed;
     }
 
@@ -113,6 +124,7 @@ impl Processor for Sampler {
     }
 
     fn get_id(&self) -> i32 {
+        // {todo} The `return` keyword is useless here.
         return self.id;
     }
 

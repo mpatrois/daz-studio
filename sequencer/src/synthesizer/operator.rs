@@ -2,6 +2,7 @@ use crate::adsr::ADSR;
 use crate::noise::NOISE_TAB;
 use crate::noise::NOISE_TAB_SIZE;
 
+// {todo} Use an `enum`. See the same comment in `midimessage.rs`.
 pub const SINE : u8 = 0;
 pub const TRIANGLE : u8 = 1;
 pub const SQUARE : u8 = 2;
@@ -16,6 +17,8 @@ pub struct Operator {
     frequency: f32,
     angular_speed: f32,
     current_angle: f32,
+    // {todo} `pub` is bad for encapsulation if `Operator` is
+    // self-contained, but why not.
     pub volume: f32,
     pub adsr: ADSR,
     pub value: f32,
@@ -28,6 +31,7 @@ pub struct Operator {
 
 impl Operator {
     pub fn new(sample_rate: f32, osc_type: u8) -> Operator {
+        // {todo} `return` useless
         return Operator {
             frequency: 0.0,
             angular_speed: 0.0,
@@ -48,9 +52,11 @@ impl Operator {
         self.current_angle += self.angular_speed;
 
         if self.feedback == 0.0 {
+            // {todo} `return` useless
             return self.value;
         } else {
             self.current_angle -= self.angular_speed;
+            // {todo} `return` useless
             return self.tick_modulated(self.value * self.feedback);
         }
     }
@@ -58,9 +64,11 @@ impl Operator {
     pub fn tick_modulated(&mut self, modulation: f32) -> f32 {
         self.value = self.oscillate(self.current_angle + modulation) * self.adsr.tick() * self.volume;
         self.current_angle += self.angular_speed;
+        // {todo} `return` useless
         return self.value;
     }
 
+    // {todo} Why not put this in `new`?
     pub fn init(&mut self, sample_rate: f32, frequency: f32, volume: f32, osc_type: u8, phase_offset: f32, feedback: f32) {
        self.frequency = frequency;
        self.angular_speed = (frequency / sample_rate) * 2.0 * std::f32::consts::PI;
@@ -74,6 +82,7 @@ impl Operator {
        self.time_step = 1. / sample_rate;
     }
 
+    // {todo} Use `else` branches and avoid `return`.
     pub fn oscillate(&mut self, phase: f32) -> f32 {
 
         if self.osc_type == SINE {

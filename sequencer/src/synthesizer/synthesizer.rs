@@ -19,6 +19,8 @@ const MAX_VOICES : usize = 8;
 pub struct Synthesizer {
     voices: Vec<SynthesizerVoice>,
     nb_actives_notes: usize,
+    // {todo} `pub` is bad for encapsulation if `Synthesizer` is
+    // self-contained.
     pub id: i32,
     pub note_events: Vec<MidiMessage>,
     im_armed: bool,
@@ -32,6 +34,8 @@ impl Synthesizer {
 
         let mut voices : Vec<SynthesizerVoice> = Vec::new();
 
+        // {todo} You can initialize `voices` with an iterator. See
+        // the same comment in `metronome.rs`.
         for _i in 0..MAX_VOICES {
             voices.push(SynthesizerVoice::new(sample_rate))
         }
@@ -104,6 +108,8 @@ impl Synthesizer {
             oscx_adsr_release: [0.05, 0.2, 0.05, 0.05],
         });
         
+
+        // {todo} `return` useless
         return synth;
     }
 }
@@ -111,6 +117,9 @@ impl Synthesizer {
 
 impl Processor for Synthesizer {
 
+    // {todo} This method seems expensive if it is intended to be
+    // called on each `Note On`. `midi_note` and `velocity` could be
+    // wrapped in a dedicated type.
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
         if self.nb_actives_notes < MAX_VOICES - 1 {
             let note_to_active = self.nb_actives_notes as usize;
@@ -148,6 +157,7 @@ impl Processor for Synthesizer {
     }
 
     fn note_off(&mut self, midi_note: u8) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.voices.len() {
             if self.voices[i].note_id == midi_note && self.voices[i].active {
                 self.voices[i].stop_note();
@@ -156,12 +166,14 @@ impl Processor for Synthesizer {
     }
 
     fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if !self.voices[i].is_ended() {
                 self.voices[i].render_next_block(outputs, num_samples, nb_channels);
             }
         }
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if self.voices[i].is_ended() {
@@ -173,6 +185,7 @@ impl Processor for Synthesizer {
     }
 
     fn clear_notes_events(&mut self) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.nb_actives_notes {
             self.voices[i].stop_note();
         }
@@ -180,6 +193,7 @@ impl Processor for Synthesizer {
     }
 
     fn get_notes_events(&mut self) -> &Vec<MidiMessage> {
+        // {todo} `return` useless
         return &self.note_events;
     }
 
@@ -188,6 +202,7 @@ impl Processor for Synthesizer {
     }
 
     fn is_armed(&self) -> bool {
+        // {todo} `return` useless
         return self.im_armed;
     }
 
@@ -196,6 +211,7 @@ impl Processor for Synthesizer {
     }
 
     fn get_id(&self) -> i32 {
+        // {todo} `return` useless
         return self.id;
     }
 

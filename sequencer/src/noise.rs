@@ -1,4 +1,24 @@
+// {todo} `NOISE_TAB_SIZE` is useless since `NOISE_TAB` is an `array`:
+// you can get its size with `NOISE_TAB.len()`. `array::len` does not
+// exists, but when you call a method on a type, the compiler first
+// checks if an inherent implementation is available, if none is
+// found, the compiler will then sometimes try to convert the type to
+// another one that might have an implementation for this method. This
+// is entirely done at compile time. The conversion from `array` to
+// `slice` is hard-coded, but there are other automatic conversions,
+// most notably via the `Deref` `trait`:
+//
+// https://doc.rust-lang.org/std/ops/trait.Deref.html
+//
+// It's not the same thing but you can also have a look at `From` and
+// `Into`:
+//
+// https://doc.rust-lang.org/rust-by-example/conversion/from_into.html
 pub const NOISE_TAB_SIZE : usize = 512;
+// {todo} You can easily generate and cache such a table with a
+// pseudo-random number generator. If caching this at startup is
+// really an issue, you can use `const fn` to run code at
+// compile-time.
 pub const NOISE_TAB : [f32; 512] = [
 -0.25007062135201713,
 -0.3495725435116406,

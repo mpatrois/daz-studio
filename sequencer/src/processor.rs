@@ -12,11 +12,12 @@ pub trait Processor {
     fn is_armed(&self) -> bool;
     fn set_is_armed(&mut self, is_armed: bool);
 
+    // {todo} The ids should be wrapped in newtypes. This method could
+    // return an `enum` of different id types.
     fn get_id(&self) -> i32;
 
+    // {todo} This interface is generic, but this method is specific
+    // to `sampler.rs`. See the comment of
+    // `AudioProcessor::add_sample_to_preset`.
     fn add_sample(&mut self, sample: Sample);
 }
-
-// unsafe impl Send for Processor {
-
-// } 

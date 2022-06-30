@@ -7,10 +7,10 @@ use biquad::DirectForm1;
 
 const NB_OPERATORS : usize = 4;
 
-pub const OP_A : usize = 3;
-pub const OP_B : usize = 2;
-pub const OP_C : usize = 1;
-pub const OP_D : usize = 0;
+pub const OP_A : usize = 0;
+pub const OP_B : usize = 1;
+pub const OP_C : usize = 2;
+pub const OP_D : usize = 3;
 
 #[derive(Copy, Clone)]
 pub struct SynthesizerVoice {
@@ -34,6 +34,7 @@ impl SynthesizerVoice {
         let coeffs = Coefficients::<f32>::from_params(Type::AllPass, fs, f0, biquad::Q_BUTTERWORTH_F32).unwrap();
         let biquad_filter = DirectForm1::<f32>::new(coeffs);
 
+        // {todo} `return` useless
         return SynthesizerVoice {
             active: true,
             note_id: 0,
@@ -58,6 +59,7 @@ impl SynthesizerVoice {
         
         self.biquad_filter.reset_state();
         self.note_id = midi_note;
+        // {todo} Use an iterator instead of indexes.
         for i in 0..NB_OPERATORS {
             self.operators[i].adsr.reset();
             self.operators[i].adsr.note_on();
@@ -66,16 +68,19 @@ impl SynthesizerVoice {
     }
 
     pub fn stop_note(&mut self) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..NB_OPERATORS {
             self.operators[i].adsr.note_off();
         }
     }
 
     pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) { 
+        // {todo} See other comments about `unsafe` usage.
         unsafe {
             let mut out = 0.0;
             let mut idx = 0;
             while idx < nb_channels * num_samples {
+                // {todo} This block is too big.
 
                 if self.algorithm == 1 {
                     self.operators[OP_D].tick();
@@ -133,6 +138,7 @@ impl SynthesizerVoice {
     }
 
     pub fn is_ended(&self) -> bool {
+        // {todo} `return` useless
         return !self.active;
     }
 }
