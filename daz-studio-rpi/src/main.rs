@@ -14,6 +14,7 @@ const FRAMES_PER_BUFFER: u32 = 128;
 
 use sequencer::midimessage::MidiMessage;
 use sequencer::Sequencer;
+use sequencer;
 
 use sdl2::rect::Rect;
 
@@ -21,8 +22,7 @@ use std::sync::mpsc;
 use midir::{MidiInput, Ignore};
 
 fn main() {
-    let (midi_produce, midi_consume) = mpsc::channel::<MidiMessage>();
-    let (midi_produce_key_board, midi_consume_key_board) = mpsc::channel::<MidiMessage>();
+    let (sequencer_sender, sequencer_receiver) = mpsc::channel::<sequencer::Message>();
 
     let portaudio = pa::PortAudio::new().unwrap();
     let mut settings = portaudio.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
@@ -36,17 +36,38 @@ fn main() {
 
         sequencer.process(buffer.as_mut_ptr(), frames, CHANNELS as usize);
 
-        for midi in [&midi_consume, &midi_consume_key_board] {
-            for mess in midi.try_recv() {
-                if (mess.first & 0xf0) == 0x90 {
-                    sequencer.note_on(mess.second);
-                }
-                if (mess.first & 0xf0) == 0x80 {
-                    sequencer.note_off(mess.second);
-                }
+        for msg in sequencer_receiver.try_recv() {
+            match msg {
+                sequencer::Message::PresetPrev => {
+                    // {todo} Put this in `Sequencer`
+                    let id = &mut sequencer.selected_preset_id;
+                    *id = 0.max(*id - 1); // {todo} range?
+                    for proc in sequencer.processors.iter_mut() {
+                        proc.set_is_armed(proc.get_id() == *id);
+                    }
+                },
+
+                sequencer::Message::PresetNext => {
+                    // {todo} Put this in `Sequencer`
+                    let id = &mut sequencer.selected_preset_id;
+                    *id = 100.min(*id + 1); // {todo} range?
+                    for proc in sequencer.processors.iter_mut() {
+                        println!("id: {}", proc.get_id());
+                        proc.set_is_armed(proc.get_id() == *id);
+                    }
+                },
+
+                sequencer::Message::Midi(midi) => {
+                    if midi.first & 0xf0 == 0x90 {
+                        sequencer.note_on(midi.second);
+                    } else if midi.first & 0xf0 == 0x80 {
+                        sequencer.note_off(midi.second);
+                    }
+                },
             }
         }
-        return pa::Continue;
+
+        pa::Continue
     };
 
     let mut stream = portaudio.open_non_blocking_stream(settings, callback).unwrap();
@@ -61,13 +82,14 @@ fn main() {
         let in_ports = midi_in.ports();
         
         if in_ports.len() >= 1 {
+            let sequencer_sender = sequencer_sender.clone();
             let conn_in = midi_in.connect(&in_ports[0], "midir-read-input", move |_stamp, message, _| {
-                midi_produce.send(MidiMessage {
+                sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
                     first: message[0],
                     second: message[1],
                     third: message[2],
                     tick: 0
-                }).unwrap();
+                })).unwrap();
 
             }, ());
             if conn_in.is_ok() {
@@ -76,7 +98,7 @@ fn main() {
         }
     }
 
-    launch_ui(midi_produce_key_board).unwrap();
+    launch_ui(sequencer_sender).unwrap();
 }
 
 // Scale fonts to a reasonable size when they're too big (though they might look less smooth)
@@ -104,7 +126,7 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
     Rect::new(cx, cy, w as u32, h as u32)
 }
 
-fn launch_ui(midi_produce_key_board: std::sync::mpsc::Sender<MidiMessage>) -> Result<(), String> {
+fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> Result<(), String> {
     extern crate sdl2;
 
     use sdl2::event::Event;
@@ -176,12 +198,12 @@ fn launch_ui(midi_produce_key_board: std::sync::mpsc::Sender<MidiMessage>) -> Re
 
                     let note = key_board_notes.get(&keycode); 
                     if note.is_some() {
-                        midi_produce_key_board.send(MidiMessage {
+                        sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
                             first: 0x9c,
                             second: *note.unwrap(),
                             third: 127,
                             tick: 0
-                        }).unwrap();
+                        })).unwrap();
                     }
                 },
                 Event::KeyUp {
@@ -189,18 +211,22 @@ fn launch_ui(midi_produce_key_board: std::sync::mpsc::Sender<MidiMessage>) -> Re
                     repeat: false,
                     ..
                 } => {
-                    if keycode == Keycode::Escape {
-                        break 'running;
-                    }
-                    // keycode.
-                    let note = key_board_notes.get(&keycode); 
-                    if note.is_some() {
-                        midi_produce_key_board.send(MidiMessage {
-                            first: 0x8c,
-                            second: *note.unwrap(),
-                            third: 127,
-                            tick: 0
-                        }).unwrap();
+
+                    match keycode {
+
+                        Keycode::Escape => break 'running,
+
+                        Keycode::Left => sequencer_sender.send(sequencer::Message::PresetPrev).unwrap(),
+                        Keycode::Right => sequencer_sender.send(sequencer::Message::PresetNext).unwrap(),
+
+                        _ => if let Some(note) = key_board_notes.get(&keycode) {
+                            sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
+                                first: 0x8c,
+                                second: *note,
+                                third: 127,
+                                tick: 0
+                            })).unwrap();
+                        }
                     }
                 }
                 _ => {},

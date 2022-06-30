@@ -17,6 +17,12 @@ use crate::fifoqueue::FifoQueue;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
 
+pub enum Message {
+    PresetPrev,
+    PresetNext,
+    Midi(MidiMessage),
+}
+
 pub struct Sequencer {
     pub sample_rate: f32,
     pub tick: i32,
