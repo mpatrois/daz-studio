@@ -13,13 +13,13 @@ pub struct Sampler {
     pub decay: f32,
     pub sustain: f32,
     pub release: f32,
-    pub id: i32,
+    pub id: usize,
     pub note_events: Vec<MidiMessage>,
     pub im_armed: bool
 }
 
 impl Sampler {
-    pub fn new(sample_rate: f32, id: i32) -> Sampler {
+    pub fn new(sample_rate: f32, id: usize) -> Sampler {
 
         let mut voices : Vec<SamplerVoice> = Vec::new();
 
@@ -112,7 +112,7 @@ impl Processor for Sampler {
         self.im_armed = is_armed;
     }
 
-    fn get_id(&self) -> i32 {
+    fn get_id(&self) -> usize {
         return self.id;
     }
 

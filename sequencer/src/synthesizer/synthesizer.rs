@@ -19,7 +19,7 @@ const MAX_VOICES : usize = 8;
 pub struct Synthesizer {
     voices: Vec<SynthesizerVoice>,
     nb_actives_notes: usize,
-    pub id: i32,
+    pub id: usize,
     pub note_events: Vec<MidiMessage>,
     im_armed: bool,
     sample_rate: f32,
@@ -28,7 +28,7 @@ pub struct Synthesizer {
 }
 
 impl Synthesizer {
-    pub fn new(sample_rate: f32, id: i32) -> Synthesizer {
+    pub fn new(sample_rate: f32, id: usize, preset_id: usize) -> Synthesizer {
 
         let mut voices : Vec<SynthesizerVoice> = Vec::new();
 
@@ -44,7 +44,7 @@ impl Synthesizer {
             im_armed: false,
             sample_rate: sample_rate,
             presets: Vec::new(),
-            preset_id: 0
+            preset_id: preset_id
         };
 
         synth.presets.push(SynthesizerPreset {
@@ -89,11 +89,11 @@ impl Synthesizer {
             name: "G-FUNK lead".to_string(),
             algorithm: 11,
             nb_voices: 1,
-            filter_type: Type::BandPass,
+            filter_type: Type::LowPass,
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
 
-            oscx_coarse: [0.5, 0.5, 3.98, 4.],
+            oscx_coarse: [0.5, 0.5, 3.98, 2.],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-1.0), db_to_gain(-1.0)],
             oscx_osc_type: [OSC_OFF, OSC_OFF, SAW_DIGITAL, SAW_DIGITAL],
             oscx_phase_offset: [0.0, 0.0, 0., 0.],
@@ -195,7 +195,7 @@ impl Processor for Synthesizer {
         self.im_armed = is_armed;
     }
 
-    fn get_id(&self) -> i32 {
+    fn get_id(&self) -> usize {
         return self.id;
     }
 

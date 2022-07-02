@@ -37,7 +37,7 @@ pub struct Sequencer {
     pub metronome_active: bool,
     pub buffer_size: usize,
     pub processors: Vec<Box<dyn Processor + Send>>,
-    pub selected_preset_id: i32,
+    pub instrument_selected_id: usize,
     pub is_recording: bool,
     pub fifo_queue_midi_message: FifoQueue<MidiMessage>,
     pub bpm_has_biped: bool,
@@ -58,10 +58,10 @@ impl Sequencer {
             volume: 0.6,
             elapsed_time_each_render: 0.0,
             metronome: metronome,
-            metronome_active: true,
+            metronome_active: false,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            selected_preset_id: 0,
+            instrument_selected_id: 0,
             bars: 2,
             is_recording: false,
             fifo_queue_midi_message: FifoQueue::new(64),
@@ -70,11 +70,10 @@ impl Sequencer {
         sequencer.set_tempo(90.0);
         sequencer.compute_elapsed_time_each_render();
 
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 4)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 5)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 6)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 7)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 8)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 0, 0)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 1)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 2)));
+
         return sequencer;
     }
 
@@ -234,4 +233,25 @@ impl Sequencer {
             }
         }
     }
+
+    pub fn next_instrument(&mut self) {
+        self.instrument_selected_id += 1;
+        if self.instrument_selected_id > self.processors.len() - 1 {
+            self.instrument_selected_id = 0;
+        }
+        for (i, proc) in self.processors.iter_mut().enumerate() {
+            proc.set_is_armed(i == self.instrument_selected_id);
+        }
+    } 
+    
+    pub fn previous_instrument(&mut self) {
+        if self.instrument_selected_id > 0 {
+            self.instrument_selected_id -= 1;
+        } else {
+            self.instrument_selected_id = self.processors.len() - 1;
+        }
+        for (i, proc) in self.processors.iter_mut().enumerate() {
+            proc.set_is_armed(i == self.instrument_selected_id);
+        }
+    } 
 }

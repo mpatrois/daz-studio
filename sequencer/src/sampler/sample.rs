@@ -30,8 +30,8 @@ impl Sample {
             right_channel: right_channel,
             size: length_channel,
             root_midi_note: 60,
-            note_midi_min: 0,
-            note_midi_max: 0,
+            note_midi_min: 60,
+            note_midi_max: 60,
             loop_crossfade_duration: 0,
             loop_length: 0,
         }

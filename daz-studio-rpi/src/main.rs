@@ -39,22 +39,11 @@ fn main() {
         for msg in sequencer_receiver.try_recv() {
             match msg {
                 sequencer::Message::PresetPrev => {
-                    // {todo} Put this in `Sequencer`
-                    let id = &mut sequencer.selected_preset_id;
-                    *id = 0.max(*id - 1); // {todo} range?
-                    for proc in sequencer.processors.iter_mut() {
-                        proc.set_is_armed(proc.get_id() == *id);
-                    }
+                    sequencer.previous_instrument();
                 },
 
                 sequencer::Message::PresetNext => {
-                    // {todo} Put this in `Sequencer`
-                    let id = &mut sequencer.selected_preset_id;
-                    *id = 100.min(*id + 1); // {todo} range?
-                    for proc in sequencer.processors.iter_mut() {
-                        println!("id: {}", proc.get_id());
-                        proc.set_is_armed(proc.get_id() == *id);
-                    }
+                    sequencer.next_instrument();
                 },
 
                 sequencer::Message::Midi(midi) => {

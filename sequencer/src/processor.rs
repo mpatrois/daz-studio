@@ -12,7 +12,7 @@ pub trait Processor {
     fn is_armed(&self) -> bool;
     fn set_is_armed(&mut self, is_armed: bool);
 
-    fn get_id(&self) -> i32;
+    fn get_id(&self) -> usize;
 
     fn add_sample(&mut self, sample: Sample);
 }
