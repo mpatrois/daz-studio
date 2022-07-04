@@ -1,13 +1,14 @@
 pub mod metronome;
 pub mod oscillator;
 pub mod synthesizer;
-pub mod sampler;
 pub mod adsr;
 pub mod decibels;
 pub mod midimessage;
 pub mod processor;
 pub mod fifoqueue;
+pub mod sampler;
 pub mod noise;
+pub mod preset;
 
 use crate::processor::Processor;
 use crate::metronome::metronome::Metronome;

@@ -2,6 +2,8 @@ use crate::processor::Processor;
 use crate::midimessage::MidiMessage;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
+use crate::sampler::sampler_preset::SamplerPreset;
+use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;
 
@@ -118,5 +120,25 @@ impl Processor for Sampler {
 
     fn add_sample(&mut self, sample: Sample) {
         self.samples.push(sample);
+    }
+
+    fn get_current_preset(&self) -> Box<dyn Preset> {
+        return Box::new(SamplerPreset {
+            id: 0,
+            name: "Default".to_string()
+        });
+    }
+
+    fn get_presets(&self) -> Vec<Box<dyn Preset>> {
+        let presets : Vec<Box<dyn Preset>> = Vec::new();
+        return presets;
+    }
+    
+    fn next_presets(&self) {
+
+    }
+    
+    fn previous_presets(&self) {
+
     }
 }

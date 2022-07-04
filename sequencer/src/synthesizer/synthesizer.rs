@@ -8,6 +8,7 @@ use crate::synthesizer::operator::SAW_ANALOGIC_4;
 use crate::synthesizer::operator::SAW_DIGITAL;
 use crate::synthesizer::operator::OSC_OFF;
 use crate::synthesizer::synthesizer_preset::SynthesizerPreset;
+use crate::preset::Preset;
 
 use crate::decibels::db_to_gain;
 
@@ -48,6 +49,7 @@ impl Synthesizer {
         };
 
         synth.presets.push(SynthesizerPreset {
+            id: 0,
             name: "Guitar bass".to_string(),
             algorithm: 5,
             nb_voices: 1,
@@ -67,6 +69,7 @@ impl Synthesizer {
         });
         
         synth.presets.push(SynthesizerPreset {
+            id: 1,
             name: "G-FUNK bass".to_string(),
             algorithm: 11,
             nb_voices: 1,
@@ -86,6 +89,7 @@ impl Synthesizer {
         });
 
         synth.presets.push(SynthesizerPreset {
+            id: 2,
             name: "G-FUNK lead".to_string(),
             algorithm: 11,
             nb_voices: 1,
@@ -200,5 +204,25 @@ impl Processor for Synthesizer {
     }
 
     fn add_sample(&mut self, _sample: Sample) {}
+
+    fn get_current_preset(&self) ->  Box<dyn Preset> {
+        Box::new(self.presets[self.preset_id].clone())
+    }
+
+    fn get_presets(&self) -> Vec<Box<dyn Preset>> {
+        let mut presets : Vec<Box<dyn Preset>> = Vec::new();
+        for preset in &self.presets {
+            presets.push(Box::new(preset.clone()));
+        }
+        return presets;
+    }
+    
+    fn next_presets(&self) {
+
+    }
+    
+    fn previous_presets(&self) {
+
+    }
     
 }
