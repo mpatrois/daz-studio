@@ -18,8 +18,8 @@ use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
 
 pub enum Message {
-    PresetPrev,
-    PresetNext,
+    InstrumentPrev,
+    InstrumentNext,
     Midi(MidiMessage),
 }
 

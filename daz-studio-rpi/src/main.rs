@@ -38,11 +38,11 @@ fn main() {
 
         for msg in sequencer_receiver.try_recv() {
             match msg {
-                sequencer::Message::PresetPrev => {
+                sequencer::Message::InstrumentPrev => {
                     sequencer.previous_instrument();
                 },
 
-                sequencer::Message::PresetNext => {
+                sequencer::Message::InstrumentNext => {
                     sequencer.next_instrument();
                 },
 
@@ -205,8 +205,8 @@ fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> R
 
                         Keycode::Escape => break 'running,
 
-                        Keycode::Left => sequencer_sender.send(sequencer::Message::PresetPrev).unwrap(),
-                        Keycode::Right => sequencer_sender.send(sequencer::Message::PresetNext).unwrap(),
+                        Keycode::Left => sequencer_sender.send(sequencer::Message::InstrumentPrev).unwrap(),
+                        Keycode::Right => sequencer_sender.send(sequencer::Message::InstrumentNext).unwrap(),
 
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
                             sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
