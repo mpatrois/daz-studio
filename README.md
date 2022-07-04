@@ -7,7 +7,7 @@ A sequencer built in RUST. Runs on macOS and Linux for the moment.
 
 ## About
 
-The first goal of this projet is to build a portable sequencer that you can bring to a party pour t'ambiencer mon frère.
+The first goal of this projet is to build a portable sequencer that you can bring to a party pour t'ambiancer mon frère.
 
 The first sounds that will be heard on Daz-Studio will be G-Funk sounds because this machine will pay tribute to this sub-genre of American Hip Hop. Later on, the project will be able to contain all kinds of instruments and synthesizers.
 
