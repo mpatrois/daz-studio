@@ -17,6 +17,8 @@ use crate::fifoqueue::FifoQueue;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
 
+// {todo} Using `pub` is bad for encapsulation, and `Sequencer` seems
+// to be mostly self-contained.
 pub struct Sequencer {
     pub sample_rate: f32,
     pub tick: i32,
@@ -69,6 +71,7 @@ impl Sequencer {
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 6)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 7)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 8)));
+        // {todo} `return` useless
         return sequencer;
     }
 
@@ -104,8 +107,11 @@ impl Sequencer {
             if self.metronome_active {
                 self.metronome.bip(start_bar);
             }
+            // {todo} This `return` could easily be avoided with an
+            // `else` branch.
             return true;
         }
+        // {todo} `return` useless
         return false;
     }
 
@@ -113,6 +119,7 @@ impl Sequencer {
         loop {
             let midi_message = self.fifo_queue_midi_message.read();
             if let Some(midi_message) = midi_message {
+                // {todo} Use an iterator instead of indexes.
                 for i in 0..self.processors.len() {
                     if self.processors[i].is_armed() {
                         self.processors[i].add_notes_event(*midi_message); 
@@ -125,6 +132,7 @@ impl Sequencer {
     }
 
     pub fn play_recorded_note_events(&mut self) {
+        // {todo} Use iterators instead of indexes.
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
                 if self.processors[i].get_notes_events()[k].tick == self.tick {
@@ -167,16 +175,19 @@ impl Sequencer {
         self.update();
 
         for s in 0..(nb_channels * num_samples) {
+            // {todo} See other comments about `unsafe` usage.
             unsafe { *outputs.offset(s as isize) = 0.0; }
         }
 
         self.metronome.process(outputs, num_samples, nb_channels);
         
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.processors.len() {
             self.processors[i].process(outputs, num_samples, nb_channels);
         }
 
         for s in 0..(nb_channels * num_samples) {
+            // {todo} See other comments about `unsafe` usage.
             unsafe { *outputs.offset(s as isize) *= self.volume; }
         }
     }
@@ -186,6 +197,7 @@ impl Sequencer {
     }
 
     pub fn note_on(&mut self, note_id: u8) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.processors.len() {
             if self.processors[i].is_armed() {
                 self.processors[i].note_on(note_id, 1.0);
@@ -204,6 +216,7 @@ impl Sequencer {
     }
 
     pub fn note_off(&mut self, note_id: u8) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.processors.len() {
             if self.processors[i].is_armed() {
                 self.processors[i].note_off(note_id);
@@ -222,6 +235,7 @@ impl Sequencer {
     }
 
     pub fn clear_notes_events(&mut self, clear_all_instruments: bool) {
+        // {todo} Use an iterator instead of indexes.
         for i in 0..self.processors.len() {
             if self.processors[i].is_armed() || clear_all_instruments {
                 self.processors[i].clear_notes_events();

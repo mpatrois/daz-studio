@@ -36,6 +36,7 @@ impl ADSR {
             state: ADSRState::IDLE
         };
         adsr.recalculate_rates();
+        // {todo} The `return` keyword is useless here.
         return adsr;
     }
 
@@ -50,8 +51,10 @@ impl ADSR {
 
     pub fn get_rate(&self, distance: f32, time_in_seconds: f32, sr: f32) -> f32 {
         if time_in_seconds > 0.0 {
+            // {todo} The `return` keyword is useless here.
             return distance / (time_in_seconds * sr);
         } else {
+            // {todo} The `return` keyword is useless here.
             return -1.0;
         }
     }
@@ -102,6 +105,36 @@ impl ADSR {
         self.recalculate_rates();
     }
 
+    // {todo} It's generally better to be stateless (and to avoid
+    // `mut`, `&mut` or `&mut self` where reasonably possible). `ADSR`
+    // is simple yet state-full. It seems like `ADSR` is used not only
+    // as an envelop generator but also as a tracker for active notes.
+    //
+    // A better solution might be to track active notes separately
+    // (probably in `sequencer.rs`). Tracking an active note could be
+    // done easily by storing the `Note On` time along with other
+    // informations such as pitch or velocity in a dedicated `struct`
+    // like `Note`. Tracking active notes separately is also useful
+    // because the envelop might not be the only thing that is
+    // changing depending on the time elapsed since the `Note On`.
+    //
+    // This new `Note` `struct` could even be reused to store not only
+    // current active notes but also notes in a sequence by adding an
+    // optional `Note Off` time... One does not necessarily need to
+    // store sequences in MIDI nor in a format that maps one-to-one
+    // with MIDI...
+    //
+    // Anyway, `ADSR` could be mostly read-only and stateless, with
+    // maybe an exception for the sample rate if cached computations
+    // are needed. `ADSR` could simply provide a method taking the
+    // time elapsed since the `Note On` and returning an envelop gain,
+    // for exemple:
+    //
+    // `pub fn envelop(&self, t: f32) -> f32 {...}`
+    //
+    // The time elapsed since the `Note On` is trivially computed from
+    // the current time and the `Note On` time stored as described
+    // above.
     pub fn tick(&mut self) -> f32 {
         if self.state == ADSRState::IDLE {
             return 0.0;
@@ -128,6 +161,7 @@ impl ADSR {
                 self.go_to_next_state();
             }
         }
+        // {todo} The `return` keyword is useless here.
         return self.envelope_val;
     }
 

@@ -4,12 +4,18 @@ use crate::metronome::metronome_voice::MetronomeVoice;
 const MAX_NOTES: usize = 8;
 
 pub struct Metronome {
+    // {todo} See the comment about
+    // `MetronomeVoice::buffer`. `buffer_bip_1` would need to be
+    // `Rc<Vec<f32>>`, same for `buffer_bip_2`. Unless you want to try
+    // to use a reference (which is as fast as a raw pointer but often
+    // overkill for things like that).
     buffer_bip_1: Vec<f32>,
     buffer_bip_2: Vec<f32>,
     voices: Vec<MetronomeVoice>,
     nb_actives_notes: usize
 }
 
+// {todo} `Metronome` could probably be more stateless, but why not.
 impl Metronome {
     pub fn new(sample_rate: f32) -> Metronome {
 
@@ -23,6 +29,14 @@ impl Metronome {
         // let mut adsr = ADSR::new(0.01, 0.0, 1.0, 0.05, sample_rate);
         let mut voices : Vec<MetronomeVoice> = Vec::new();
 
+        // {todo} You can initialize `voices` using an iterator like that:
+        //
+        // let voices: Vec<MetronomeVoice> = (0..MAX_NOTES).map(|_| MetronomeVoice::new()).collect();
+        //
+        // This is pretty and more efficient because the `Vec` storage
+        // will be allocated only once thanks to:
+        //
+        // https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint
         for _i in 0..MAX_NOTES {
             voices.push(MetronomeVoice::new())
         }

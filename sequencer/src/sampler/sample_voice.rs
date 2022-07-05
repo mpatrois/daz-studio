@@ -5,6 +5,8 @@ use crate::sampler::sample::Sample;
 
 #[derive(Copy, Clone)]
 pub struct SamplerVoice {
+    // {todo} Try to avoid using `pub` everywhere, but if it's an internal
+    // `struct` it might be OK.
     pub active: bool,
     pub sample: *const Sample,
     pub velocity: f32,
@@ -43,12 +45,15 @@ impl SamplerVoice {
         self.sample = sample;
         self.note_id = midi_note;
     
+        // {todo} Better wrap `self.sample` in an `Option` and use `if let`.
         if self.sample.is_null() { return };
 
         self.active = true;
 
         self.adsr.note_on();
         
+        // {todo} The use of `unsafe` should be avoided or wrapped inside
+        // a dedicated type with careful checks.
         unsafe {
             self.adsr.set_sample_rate((*self.sample).sample_rate);
             let midi_delta = ((midi_note - (*self.sample).root_midi_note)) as f32 / 12.0;
@@ -63,9 +68,11 @@ impl SamplerVoice {
         self.adsr.note_off();
     }
 
-    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, _nb_channels: usize) {
+    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize) {
         if self.sample.is_null() { return };
         
+        // {todo} The use of `unsafe` should be avoided or wrapped inside
+        // a dedicated type with careful checks.
         unsafe {
             let output_left = outputs;
             let output_right = (outputs).offset(num_samples as isize);
@@ -103,6 +110,7 @@ impl SamplerVoice {
     }
 
     pub fn is_ended(&self) -> bool {
+        // {todo} The `return` keyword is useless here.
         return !self.active;
     }
 }

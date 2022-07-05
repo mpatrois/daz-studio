@@ -1,4 +1,6 @@
 
+// {todo} Using `pub` everywhere is not good for encapsulation, but
+// why not if it's an internal `struct`.
 pub struct Sample {
     pub sample_rate: f32,
     // pub midi_note: i8,
@@ -18,11 +20,13 @@ impl Sample {
         let mut left_channel : Vec<f32> = Vec::with_capacity(data_size / 2);
         let mut right_channel : Vec<f32> = Vec::with_capacity(data_size / 2);
         for i in 0..length_channel {
+            // {todo} See other comments about `unsafe` usage.
             unsafe {
                 left_channel.push(*array_ptr.offset((i) as isize));
                 right_channel.push(*array_ptr.offset((length_channel + i) as isize))
             }
         }
+        // {todo} The `return` keyword is useless here.
         return Sample {
             sample_rate: sample_rate,
             // midi_note: 67,
@@ -39,8 +43,11 @@ impl Sample {
 
     pub fn apply_to_note(&self, midi_note: u8) -> bool {
         if self.note_midi_min <= midi_note && midi_note <= self.note_midi_max  {
+            // {todo} This `return` could easily be avoided with an
+            // `else` branch.
             return true;
         }
+        // {todo} `return` useless
         return false;
     } 
 }
