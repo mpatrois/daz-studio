@@ -1,0 +1,59 @@
+{
+    "attack": 0.0,
+    "decay": 6.0,
+    "sustain": 1.0,
+    "release": 0.74,
+    "name": "Daz Funk",
+    "id": 0,
+    "samples": [
+      {
+          "baseNote": 37,
+          "filepath": "./sampler-presets/Daz-Funk/hihat.wav",
+          "loopCrossfadeDuration": 16384,
+          "loopLength": 70000,
+          "loopStart": 60000,
+          "noteMin": 37,
+          "noteMax": 37,
+          "type": 2,
+          "velocityMin": 0,
+          "velocityMax": 127
+      },
+      {
+          "baseNote": 39,
+          "filepath": "./sampler-presets/Daz-Funk/kick.wav",
+          "loopCrossfadeDuration": 16384,
+          "loopLength": 70000,
+          "loopStart": 60000,
+          "noteMin": 39,
+          "noteMax": 39,
+          "type": 2,
+          "velocityMin": 0,
+          "velocityMax": 127
+        },
+      {
+          "baseNote": 42,
+          "filepath": "./sampler-presets/Daz-Funk/openhat.wav",
+          "loopCrossfadeDuration": 16384,
+          "loopLength": 70000,
+          "loopStart": 60000,
+          "noteMin": 42,
+          "noteMax": 42,
+          "type": 2,
+          "velocityMin": 0,
+          "velocityMax": 127
+        },
+        {
+
+            "baseNote": 45,
+            "filepath": "./sampler-presets/Daz-Funk/snare.wav",
+            "loopCrossfadeDuration": 16384,
+            "loopLength": 70000,
+            "loopStart": 60000,
+            "noteMin": 45,
+            "noteMax": 45,
+            "type": 2,
+            "velocityMin": 0,
+            "velocityMax": 127
+        }
+    ]
+}

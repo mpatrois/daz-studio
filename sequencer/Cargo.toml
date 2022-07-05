@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 biquad = "0.4.2"
+wav_io = "0.1"

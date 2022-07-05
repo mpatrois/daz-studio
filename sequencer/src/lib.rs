@@ -13,6 +13,7 @@ pub mod preset;
 use crate::processor::Processor;
 use crate::metronome::metronome::Metronome;
 use crate::synthesizer::synthesizer::Synthesizer;
+use crate::sampler::sampler::Sampler;
 use crate::midimessage::MidiMessage;
 use crate::fifoqueue::FifoQueue;
 use crate::midimessage::NOTE_ON;
@@ -37,7 +38,7 @@ pub struct Sequencer {
     metronome: Metronome,
     pub metronome_active: bool,
     pub buffer_size: usize,
-    pub processors: Vec<Box<dyn Processor + Send>>,
+    pub processors: Vec<Box<dyn Processor>>,
     pub instrument_selected_id: usize,
     pub is_recording: bool,
     pub fifo_queue_midi_message: FifoQueue<MidiMessage>,
@@ -71,6 +72,7 @@ impl Sequencer {
         sequencer.set_tempo(90.0);
         sequencer.compute_elapsed_time_each_render();
 
+        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 3)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 0, 0)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 1)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 2)));

@@ -3,6 +3,7 @@ use crate::midimessage::MidiMessage;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
 use crate::sampler::sampler_preset::SamplerPreset;
+use crate::sampler::sampler_preset::SampleInfo;
 use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;
@@ -17,7 +18,8 @@ pub struct Sampler {
     pub release: f32,
     pub id: usize,
     pub note_events: Vec<MidiMessage>,
-    pub im_armed: bool
+    pub im_armed: bool,
+    presets: Vec<SamplerPreset>,
 }
 
 impl Sampler {
@@ -29,7 +31,7 @@ impl Sampler {
             voices.push(SamplerVoice::new(sample_rate))
         }
 
-        return Sampler {
+        let mut sampler = Sampler {
             voices: voices,
             nb_actives_notes: 0,
             samples: Vec::new(),
@@ -40,7 +42,51 @@ impl Sampler {
             id: id,
             note_events: Vec::with_capacity(100),
             im_armed: false,
+            presets: Vec::new()
         };
+
+        sampler.presets.push(SamplerPreset {
+            attack: 0.0,
+            decay: 6.0,
+            sustain: 1.0,
+            release: 0.74,
+            name: "Daz Funk".to_string(),
+            id: 0,
+            samples: [
+                SampleInfo {
+                    root_midi_note: 52,
+                    filepath: "./sampler-presets/Daz-Funk/hihat.wav".to_string(),
+                    note_midi_min: 52,
+                    note_midi_max: 52,
+                },
+                SampleInfo {
+                    root_midi_note: 53,
+                    filepath: "./sampler-presets/Daz-Funk/kick.wav".to_string(),
+                    note_midi_min: 53,
+                    note_midi_max: 53,
+                },
+                SampleInfo {
+                    root_midi_note: 54,
+                    filepath: "./sampler-presets/Daz-Funk/snare.wav".to_string(),
+                    note_midi_min: 54,
+                    note_midi_max: 54,
+                },
+            ].to_vec()
+        });
+
+        let first_preset = sampler.presets[0].clone();
+
+        for sample_info in first_preset.samples.iter() {
+            let sample = Sample::load_sample(sample_info, sample_rate);
+            sampler.samples.push(sample);
+        }
+
+
+
+        // sampler.presets.push(SamplerPreset::new("./sampler-presets/Daz-Funk/preset.json".to_string()));
+
+        return sampler;
+        // sampler.presets.push(Prese);
     }
 }
 
@@ -123,10 +169,7 @@ impl Processor for Sampler {
     }
 
     fn get_current_preset(&self) -> Box<dyn Preset> {
-        return Box::new(SamplerPreset {
-            id: 0,
-            name: "Default".to_string()
-        });
+        return Box::new(self.presets[0].clone());
     }
 
     fn get_presets(&self) -> Vec<Box<dyn Preset>> {
