@@ -63,13 +63,12 @@ impl SamplerVoice {
         self.adsr.note_off();
     }
 
-    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, _nb_channels: usize) {
+    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
         if self.sample.is_null() { return };
         
         unsafe {
-            let output_left = outputs;
-            let output_right = (outputs).offset(num_samples as isize);
-            for i in 0..num_samples {
+            let mut idx = 0;
+            while idx < nb_channels * num_samples {
                 let envelope_value = self.adsr.tick();
 
                 let pos = self.source_sample_position as usize;
@@ -90,14 +89,19 @@ impl SamplerVoice {
                     }
                     let left = (*self.sample).left_channel[pos] * inv_alpha + (*self.sample).left_channel[interpol_pos] * alpha;
                     let right = (*self.sample).right_channel[pos] * inv_alpha + (*self.sample).right_channel[interpol_pos] * alpha;
-                    *output_left.offset(i as isize) += left * volume;
-                    *output_right.offset(i as isize) += right * volume;
+                    // *output_left.offset(i as isize) += left * volume;
+                    // *output_right.offset(i as isize) += right * volume;
+
+                    *outputs.offset(idx as isize) += left;
+                    *outputs.offset((idx + 1) as isize) += right;
+
                     self.source_sample_position += self.pitch_ratio;
                 } else {
                     self.active = false;
                     self.adsr.reset();
                     break;
                 }
+                idx += 2;
             }
         }
     }

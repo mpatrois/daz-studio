@@ -19,19 +19,26 @@ impl Sample {
         let file_in = File::open(sample_info.filepath.clone()).unwrap();
         let (header, samples) = wav_io::read_from_file(file_in).unwrap();
 
-        let samples2 = resample::linear(samples, header.channels, header.sample_rate, sample_rate as u32);
-        
-        // let mut left_channel : Vec<f32> = Vec::new();
-        // let mut right_channel : Vec<f32> = Vec::new();
+        let mut left_channel: Vec<f32> = Vec::with_capacity(samples.len());
+        let mut right_channel: Vec<f32> = Vec::with_capacity(samples.len());
 
+        if header.channels == 1 {
+            left_channel = samples.clone();
+            right_channel = samples.clone();
+        } else if header.channels == 2 {
+            let mut i = 0;
+            while i < samples.len() {
+                left_channel.push(samples[i]);
+                right_channel.push(samples[i+1]);
+                i += 2;
+            }
+        }
     
-        println!("={:?}", header);
-        
         return Sample {
             sample_rate: sample_rate,
-            size: samples2.len(),
-            left_channel: samples2.clone(),
-            right_channel: samples2.clone(),
+            size: left_channel.len(),
+            left_channel: left_channel,
+            right_channel: right_channel,
             root_midi_note: sample_info.root_midi_note,
             note_midi_min: sample_info.note_midi_min,
             note_midi_max: sample_info.note_midi_max,
