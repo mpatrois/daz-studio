@@ -15,7 +15,6 @@ pub struct Sample {
 
 impl Sample {
     pub fn load_sample(sample_info: &SampleInfo, sample_rate: f32) -> Sample {
-
         let file_in = File::open(sample_info.filepath.clone()).unwrap();
         let (header, samples) = wav_io::read_from_file(file_in).unwrap();
 

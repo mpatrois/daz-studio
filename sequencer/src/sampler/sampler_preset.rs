@@ -2,11 +2,16 @@
 const NB_OPERATORS : usize = 4;
 
 use crate::preset::Preset;
+
+use std::error::Error;
 use std::fs::File;
+use std::io::BufReader;
 use std::io::Read;
+use std::path::Path;
 
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct SampleInfo {
     pub root_midi_note: u8,
     pub note_midi_min: u8,
@@ -14,7 +19,7 @@ pub struct SampleInfo {
     pub filepath: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize)]
 pub struct SamplerPreset {
     pub id: usize,
     pub name: String,
@@ -23,6 +28,16 @@ pub struct SamplerPreset {
     pub decay: f32,
     pub sustain: f32,
     pub release: f32,
+}
+
+impl SamplerPreset {
+    pub fn new(filepath: String) -> Result<SamplerPreset, Box<dyn Error>>  {
+        let file = File::open(filepath)?;
+        let reader = BufReader::new(file);
+
+        let samplerPreset: SamplerPreset = serde_json::from_reader(reader)?;
+        Ok(samplerPreset)
+    }
 }
 
 impl Preset for SamplerPreset {

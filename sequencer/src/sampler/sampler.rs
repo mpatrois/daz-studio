@@ -45,34 +45,8 @@ impl Sampler {
             presets: Vec::new()
         };
 
-        sampler.presets.push(SamplerPreset {
-            attack: 0.0,
-            decay: 6.0,
-            sustain: 1.0,
-            release: 0.74,
-            name: "Daz Funk".to_string(),
-            id: 0,
-            samples: [
-                SampleInfo {
-                    root_midi_note: 52,
-                    filepath: "./sampler-presets/Daz-Funk/hihat.wav".to_string(),
-                    note_midi_min: 52,
-                    note_midi_max: 52,
-                },
-                SampleInfo {
-                    root_midi_note: 53,
-                    filepath: "./sampler-presets/Daz-Funk/kick.wav".to_string(),
-                    note_midi_min: 53,
-                    note_midi_max: 53,
-                },
-                SampleInfo {
-                    root_midi_note: 54,
-                    filepath: "./sampler-presets/Daz-Funk/snare.wav".to_string(),
-                    note_midi_min: 54,
-                    note_midi_max: 54,
-                },
-            ].to_vec()
-        });
+        let samplerPresetDefault = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
+        sampler.presets.push(samplerPresetDefault.unwrap());
 
         let first_preset = sampler.presets[0].clone();
 
@@ -81,12 +55,7 @@ impl Sampler {
             sampler.samples.push(sample);
         }
 
-
-
-        // sampler.presets.push(SamplerPreset::new("./sampler-presets/Daz-Funk/preset.json".to_string()));
-
         return sampler;
-        // sampler.presets.push(Prese);
     }
 }
 
