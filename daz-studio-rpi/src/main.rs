@@ -29,7 +29,7 @@ fn main() {
     
     settings.flags = pa::stream_flags::CLIP_OFF;
 
-    let mut sequencer = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
+    let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
     sequencer.processors[0].set_is_armed(true);
 
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
@@ -187,7 +187,7 @@ fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> R
 
                     let note = key_board_notes.get(&keycode); 
                     if note.is_some() {
-                        sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
+                        sequencer_sender.send(sequencer::Message::Midi(MidiMessage {
                             first: 0x9c,
                             second: *note.unwrap(),
                             third: 127,

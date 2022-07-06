@@ -1,29 +1,52 @@
-mod Data {
-    enum Message {
-      SetTempo(f32),
-      SetVolume(f32),
-      SetMetronomeActive(bool),
-      SetIsRecording(bool),
-      SetCurrentInstrumentSelected(use),
+use std::sync::mpsc;
+
+pub enum Message {
+    SetTempo(f32),
+    SetVolume(f32),
+    SetMetronomeActive(bool),
+    SetIsRecording(bool),
+    SetCurrentInstrumentSelected(usize),
+}
+
+pub struct Data {
+    pub tempo: f32,
+    pub tick_time: f32,
+    pub volume: f32,
+    pub metronome_active: bool,
+    pub ticks_per_quarter_note: i32,
+    pub is_recording: bool,
+    pub instrument_selected_id: usize,
+    pub receiver: mpsc::Receiver<Message>,
+}
+
+impl Data {
+    
+    pub fn new() -> (Data, mpsc::Sender<Message>) {
+        let (sender, receiver) = mpsc::channel::<Message>();
+        let mut data = Data {
+            tempo: 90.0,
+            volume: 0.6,
+            metronome_active: true,
+            is_recording: false,
+            ticks_per_quarter_note: 960,
+            instrument_selected_id: 0,
+            tick_time: 0.0,
+            receiver
+        };
+        data.compute_tick_time();
+        (data, sender)
     }
-  
-    struct Data {
-      tempo: f32,
-      volume: f32,
-      metronome_active: bool,
-      is_recording: bool,
-      instrument_selected_id: bool,
-      receiver: std::sync::mpsc::Receiver<Message>,
-    }
-  
-    impl Data {
-      fn process_messages(&mut self) {
+
+    pub fn process_messages(&mut self) {
         for msg in self.receiver.try_iter() {
-          match msg {
-            Some(Message::SetTempo(x)) => self.tempo = x,
-            _ => (),
-          }
+            match msg {
+                Message::SetTempo(x) => self.tempo = x,
+                _ => (),
+            }
         }
-      }
     }
-  }
+
+    fn compute_tick_time(&mut self) {
+        self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;
+    }
+}
