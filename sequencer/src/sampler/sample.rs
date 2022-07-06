@@ -11,6 +11,7 @@ pub struct Sample {
     pub root_midi_note: u8,
     pub note_midi_min: u8,
     pub note_midi_max: u8,
+    pub is_one_shot: bool
 }
 
 impl Sample {
@@ -41,6 +42,7 @@ impl Sample {
             root_midi_note: sample_info.root_midi_note,
             note_midi_min: sample_info.note_midi_min,
             note_midi_max: sample_info.note_midi_max,
+            is_one_shot: sample_info.is_one_shot
         }
     }
 

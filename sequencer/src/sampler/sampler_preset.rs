@@ -17,6 +17,7 @@ pub struct SampleInfo {
     pub note_midi_min: u8,
     pub note_midi_max: u8,
     pub filepath: String,
+    pub is_one_shot: bool,
 }
 
 #[derive(Clone, Deserialize)]

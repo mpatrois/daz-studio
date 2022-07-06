@@ -60,7 +60,13 @@ impl SamplerVoice {
     }
 
     pub fn stop_note(&mut self) {
-        self.adsr.note_off();
+        if self.sample.is_null() { return };
+
+        unsafe {
+            if !(*self.sample).is_one_shot {
+                self.adsr.note_off();
+            }
+        }
     }
 
     pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
