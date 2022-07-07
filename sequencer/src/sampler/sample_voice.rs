@@ -98,8 +98,8 @@ impl SamplerVoice {
                     // *output_left.offset(i as isize) += left * volume;
                     // *output_right.offset(i as isize) += right * volume;
 
-                    *outputs.offset(idx as isize) += left;
-                    *outputs.offset((idx + 1) as isize) += right;
+                    *outputs.offset(idx as isize) += left * volume;
+                    *outputs.offset((idx + 1) as isize) += right * volume;
 
                     self.source_sample_position += self.pitch_ratio;
                 } else {

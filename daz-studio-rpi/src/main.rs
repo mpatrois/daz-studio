@@ -1,46 +1,42 @@
-extern crate portaudio;
-extern crate sdl2;
-
-use std::collections::HashMap;
-
-use portaudio as pa;
+use midir::{MidiInput, Ignore};
 
 const SCREEN_WIDTH: u32 = 320;
 const SCREEN_HEIGHT: u32 = 240;
-
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 48_000.0;
 const FRAMES_PER_BUFFER: u32 = 128;
 
+use sequencer;
 use sequencer::midimessage::MidiMessage;
 use sequencer::Sequencer;
-use sequencer;
-use sequencer::data::Data;
-use sequencer::data::DataBroadcaster;
-use sequencer::data::Message;
-
-use sdl2::rect::Rect;
+use sequencer::sequencer_data::{SequencerData, DataBroadcaster, Message};
 
 use std::sync::mpsc;
-use midir::{MidiInput, Ignore};
+use std::sync::mpsc::{Sender};
+use std::collections::HashMap;
+
+use sdl2::rect::Rect;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::pixels::Color;
+use std::time::Duration;
+use sdl2::render::TextureQuery;
 
 fn main() {
     
     let (sequencer_sender, sequencer_receiver) = mpsc::channel::<sequencer::Message>();
 
-    let portaudio = pa::PortAudio::new().unwrap();
+    let portaudio = portaudio::PortAudio::new().unwrap();
     let mut settings = portaudio.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
     
-    settings.flags = pa::stream_flags::CLIP_OFF;
+    settings.flags = portaudio::stream_flags::CLIP_OFF;
 
-    let (data_ui, ui_sender) = Data::new();
+    let (data_ui, ui_sender) = SequencerData::new();
 
     let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
-    sequencer.processors[0].set_is_armed(true);
 
-    let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
+    let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 
-        sequencer.data.process_messages();
         sequencer.process(buffer.as_mut_ptr(), frames, CHANNELS as usize);
     
         for msg in sequencer_receiver.try_recv() {
@@ -62,7 +58,7 @@ fn main() {
                 },
             }
         }
-        pa::Continue
+        portaudio::Continue
     };
 
     let mut stream = portaudio.open_non_blocking_stream(settings, callback).unwrap();
@@ -76,7 +72,7 @@ fn main() {
         midi_in.ignore(Ignore::None);
         let in_ports = midi_in.ports();
         
-        if in_ports.len() >= 1 {
+        if in_ports.len() > 0 {
             let sequencer_sender = sequencer_sender.clone();
             let conn_in = midi_in.connect(&in_ports[0], "midir-read-input", move |_stamp, message, _| {
                 sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
@@ -127,17 +123,7 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
     Rect::new(cx, cy, w as u32, h as u32)
 }
 
-fn launch_ui(
-    sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>, 
-    mut data_ui: Data, 
-    dataBroadcaster: DataBroadcaster) -> Result<(), String> {
-    extern crate sdl2;
-
-    use sdl2::event::Event;
-    use sdl2::keyboard::Keycode;
-    use sdl2::pixels::Color;
-    use std::time::Duration;
-    use sdl2::render::TextureQuery;
+fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: SequencerData, broadcaster: DataBroadcaster) -> Result<(), String> {
     
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -217,20 +203,17 @@ fn launch_ui(
                 } => {
 
                     match keycode {
-
                         Keycode::Escape => break 'running,
-
                         Keycode::Left => sequencer_sender.send(sequencer::Message::InstrumentPrev).unwrap(),
                         Keycode::Right => sequencer_sender.send(sequencer::Message::InstrumentNext).unwrap(),
                         Keycode::B => {
-                            let newTempo = data_ui.tempo - 1.0;
-                            dataBroadcaster.send(Message::SetTempo(newTempo));
+                            let new_tempo = data_ui.tempo - 1.0;
+                            broadcaster.send(Message::SetTempo(new_tempo));
                         },
                         Keycode::N => {
-                            let newTempo = data_ui.tempo + 1.0;
-                            dataBroadcaster.send(Message::SetTempo(newTempo));
+                            let new_tempo = data_ui.tempo + 1.0;
+                            broadcaster.send(Message::SetTempo(new_tempo));
                         },
-                    
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
                             sequencer_sender.send(sequencer::Message::Midi(MidiMessage {
                                 first: 0x8c,
@@ -259,16 +242,16 @@ fn launch_ui(
         canvas.copy(&texture, None, Some(target))?;
         
         
-        let surfaceTempo = font
-        .render(&data_ui.tempo.to_string())
-        .blended(Color::RGBA(23, 96, 118, 255))
-        .map_err(|e| e.to_string())?;
+        let surface_tempo = font
+            .render(&data_ui.tempo.to_string())
+            .blended(Color::RGBA(23, 96, 118, 255))
+            .map_err(|e| e.to_string())?;
     
-        let textureTempo = texture_creator
-            .create_texture_from_surface(&surfaceTempo)
+        let texture_tempo = texture_creator
+            .create_texture_from_surface(&surface_tempo)
             .map_err(|e| e.to_string())?;
  
-        canvas.copy(&textureTempo, None, Some(Rect::new(0, 0, 20, 20)))?;
+        canvas.copy(&texture_tempo, None, Some(Rect::new(0, 0, 20, 20)))?;
         
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));

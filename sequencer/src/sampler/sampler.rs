@@ -3,7 +3,7 @@ use crate::midimessage::MidiMessage;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
 use crate::sampler::sampler_preset::SamplerPreset;
-use crate::sampler::sampler_preset::SampleInfo;
+// use crate::sampler::sampler_preset::SampleInfo;
 use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;
@@ -45,8 +45,8 @@ impl Sampler {
             presets: Vec::new()
         };
 
-        let samplerPresetDefault = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
-        sampler.presets.push(samplerPresetDefault.unwrap());
+        let sampler_preset_default = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
+        sampler.presets.push(sampler_preset_default.unwrap());
 
         let first_preset = sampler.presets[0].clone();
 

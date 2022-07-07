@@ -1,15 +1,12 @@
-
-const NB_OPERATORS : usize = 4;
-
 use crate::preset::Preset;
 
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::Read;
-use std::path::Path;
+// use std::io::Read;
+// use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 
 #[derive(Clone, Deserialize)]
 pub struct SampleInfo {
@@ -36,8 +33,8 @@ impl SamplerPreset {
         let file = File::open(filepath)?;
         let reader = BufReader::new(file);
 
-        let samplerPreset: SamplerPreset = serde_json::from_reader(reader)?;
-        Ok(samplerPreset)
+        let sampler_preset: SamplerPreset = serde_json::from_reader(reader)?;
+        Ok(sampler_preset)
     }
 }
 

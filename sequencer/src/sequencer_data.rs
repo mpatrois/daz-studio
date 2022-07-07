@@ -1,4 +1,6 @@
 use std::sync::mpsc;
+use std::sync::mpsc::Sender;
+use std::sync::mpsc::Receiver;
 
 #[derive(Copy, Clone)]
 pub enum Message {
@@ -22,7 +24,7 @@ impl DataBroadcaster {
     }
 }
 
-pub struct Data {
+pub struct SequencerData {
     pub tempo: f32,
     pub tick_time: f32,
     pub volume: f32,
@@ -30,14 +32,14 @@ pub struct Data {
     pub ticks_per_quarter_note: i32,
     pub is_recording: bool,
     pub instrument_selected_id: usize,
-    pub receiver: mpsc::Receiver<Message>,
+    pub receiver: Receiver<Message>,
 }
 
-impl Data {
+impl SequencerData {
     
-    pub fn new() -> (Data, mpsc::Sender<Message>) {
+    pub fn new() -> (SequencerData, Sender<Message>) {
         let (sender, receiver) = mpsc::channel::<Message>();
-        let mut data = Data {
+        let mut data = SequencerData {
             tempo: 90.0,
             volume: 0.6,
             metronome_active: true,
@@ -57,7 +59,6 @@ impl Data {
                 Message::SetTempo(x) => {
                     self.tempo = x;
                     self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;
-                    // scompute_tick_time
                 },
                 _ => (),
             }

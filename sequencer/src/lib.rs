@@ -9,7 +9,7 @@ pub mod fifoqueue;
 pub mod sampler;
 pub mod noise;
 pub mod preset;
-pub mod data;
+pub mod sequencer_data;
 
 use crate::processor::Processor;
 use crate::metronome::metronome::Metronome;
@@ -17,10 +17,10 @@ use crate::synthesizer::synthesizer::Synthesizer;
 use crate::sampler::sampler::Sampler;
 use crate::midimessage::MidiMessage;
 use crate::fifoqueue::FifoQueue;
-use crate::data::Data;
+use crate::sequencer_data::SequencerData;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
-use std::sync::mpsc;
+use std::sync::mpsc::Sender;
 
 pub enum Message {
     InstrumentPrev,
@@ -29,27 +29,25 @@ pub enum Message {
 }
 
 pub struct Sequencer {
-    pub data: Data,
-
-    pub sample_rate: f32,
-    pub tick: i32,
-    pub bars: i32,
-    
+    data: SequencerData,
+    sample_rate: f32,
+    tick: i32,
+    bars: i32,
     time_accumulated: f32,
     elapsed_time_each_render: f32,
     metronome: Metronome,
-    pub buffer_size: usize,
-    pub processors: Vec<Box<dyn Processor>>,
-    pub fifo_queue_midi_message: FifoQueue<MidiMessage>,
-    pub bpm_has_biped: bool,
+    buffer_size: usize,
+    processors: Vec<Box<dyn Processor>>,
+    fifo_queue_midi_message: FifoQueue<MidiMessage>,
+    bpm_has_biped: bool,
 }
 
 impl Sequencer {
-    pub fn new(sample_rate: f32, buffer_size: usize) -> (Sequencer, mpsc::Sender<data::Message>) {
+    pub fn new(sample_rate: f32, buffer_size: usize) -> (Sequencer, Sender<sequencer_data::Message>) {
         
         let metronome = Metronome::new(sample_rate);
 
-        let (data, sender) = Data::new();
+        let (data, sender) = SequencerData::new();
 
         let mut sequencer = Sequencer {
             sample_rate: sample_rate,
@@ -67,10 +65,12 @@ impl Sequencer {
 
         sequencer.compute_elapsed_time_each_render();
 
-        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 3)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 0, 0)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 1)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 2)));
+        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 0)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
+
+        sequencer.processors[0].set_is_armed(true);
 
         return (sequencer, sender);
     }
@@ -158,6 +158,7 @@ impl Sequencer {
     }
 
     pub fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+        self.data.process_messages();
         self.update();
 
         for s in 0..(nb_channels * num_samples) {
