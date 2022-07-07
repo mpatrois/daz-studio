@@ -65,7 +65,6 @@ impl Sequencer {
             data,
         };
 
-        // sequencer.compute_tick_time();
         sequencer.compute_elapsed_time_each_render();
 
         sequencer.processors.push(Box::new(Sampler::new(sample_rate, 3)));

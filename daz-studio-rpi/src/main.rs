@@ -15,6 +15,9 @@ const FRAMES_PER_BUFFER: u32 = 128;
 use sequencer::midimessage::MidiMessage;
 use sequencer::Sequencer;
 use sequencer;
+use sequencer::data::Data;
+use sequencer::data::DataBroadcaster;
+use sequencer::data::Message;
 
 use sdl2::rect::Rect;
 
@@ -22,6 +25,7 @@ use std::sync::mpsc;
 use midir::{MidiInput, Ignore};
 
 fn main() {
+    
     let (sequencer_sender, sequencer_receiver) = mpsc::channel::<sequencer::Message>();
 
     let portaudio = pa::PortAudio::new().unwrap();
@@ -29,13 +33,16 @@ fn main() {
     
     settings.flags = pa::stream_flags::CLIP_OFF;
 
+    let (data_ui, ui_sender) = Data::new();
+
     let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
     sequencer.processors[0].set_is_armed(true);
 
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
 
+        sequencer.data.process_messages();
         sequencer.process(buffer.as_mut_ptr(), frames, CHANNELS as usize);
-
+    
         for msg in sequencer_receiver.try_recv() {
             match msg {
                 sequencer::Message::InstrumentPrev => {
@@ -55,7 +62,6 @@ fn main() {
                 },
             }
         }
-
         pa::Continue
     };
 
@@ -87,7 +93,13 @@ fn main() {
         }
     }
 
-    launch_ui(sequencer_sender).unwrap();
+    let broadcast = DataBroadcaster {
+        senders: vec![
+            audio_sender,
+            ui_sender,
+        ]
+    };
+    launch_ui(sequencer_sender, data_ui, broadcast).unwrap();
 }
 
 // Scale fonts to a reasonable size when they're too big (though they might look less smooth)
@@ -115,7 +127,10 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
     Rect::new(cx, cy, w as u32, h as u32)
 }
 
-fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> Result<(), String> {
+fn launch_ui(
+    sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>, 
+    mut data_ui: Data, 
+    dataBroadcaster: DataBroadcaster) -> Result<(), String> {
     extern crate sdl2;
 
     use sdl2::event::Event;
@@ -207,9 +222,17 @@ fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> R
 
                         Keycode::Left => sequencer_sender.send(sequencer::Message::InstrumentPrev).unwrap(),
                         Keycode::Right => sequencer_sender.send(sequencer::Message::InstrumentNext).unwrap(),
-
+                        Keycode::B => {
+                            let newTempo = data_ui.tempo - 1.0;
+                            dataBroadcaster.send(Message::SetTempo(newTempo));
+                        },
+                        Keycode::N => {
+                            let newTempo = data_ui.tempo + 1.0;
+                            dataBroadcaster.send(Message::SetTempo(newTempo));
+                        },
+                    
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
-                            sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
+                            sequencer_sender.send(sequencer::Message::Midi(MidiMessage {
                                 first: 0x8c,
                                 second: *note,
                                 third: 127,
@@ -222,6 +245,8 @@ fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> R
             }   
         }
 
+        data_ui.process_messages();
+
         canvas.clear();
         
         let target = get_centered_rect(
@@ -232,6 +257,18 @@ fn launch_ui(sequencer_sender: std::sync::mpsc::Sender<sequencer::Message>) -> R
         );
     
         canvas.copy(&texture, None, Some(target))?;
+        
+        
+        let surfaceTempo = font
+        .render(&data_ui.tempo.to_string())
+        .blended(Color::RGBA(23, 96, 118, 255))
+        .map_err(|e| e.to_string())?;
+    
+        let textureTempo = texture_creator
+            .create_texture_from_surface(&surfaceTempo)
+            .map_err(|e| e.to_string())?;
+ 
+        canvas.copy(&textureTempo, None, Some(Rect::new(0, 0, 20, 20)))?;
         
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));

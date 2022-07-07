@@ -1,11 +1,25 @@
 use std::sync::mpsc;
 
+#[derive(Copy, Clone)]
 pub enum Message {
     SetTempo(f32),
     SetVolume(f32),
     SetMetronomeActive(bool),
     SetIsRecording(bool),
     SetCurrentInstrumentSelected(usize),
+}
+
+#[derive(Clone)]
+pub struct DataBroadcaster {
+    pub senders: Vec<mpsc::Sender<Message>>
+}
+
+impl DataBroadcaster {
+    pub fn send(&self, msg: Message) {
+        for sender in self.senders.iter() {
+            sender.send(msg.clone()).unwrap();
+        }
+    }
 }
 
 pub struct Data {
@@ -40,7 +54,11 @@ impl Data {
     pub fn process_messages(&mut self) {
         for msg in self.receiver.try_iter() {
             match msg {
-                Message::SetTempo(x) => self.tempo = x,
+                Message::SetTempo(x) => {
+                    self.tempo = x;
+                    self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;
+                    // scompute_tick_time
+                },
                 _ => (),
             }
         }
