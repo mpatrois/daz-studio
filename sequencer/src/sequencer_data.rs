@@ -7,6 +7,8 @@ pub enum Message {
     SetTempo(f32),
     SetVolume(f32),
     SetMetronomeActive(bool),
+    NextInstrument,
+    PreviousInstrument,
     SetIsRecording(bool),
     SetCurrentInstrumentSelected(usize),
 }
@@ -50,7 +52,7 @@ impl SequencerData {
         let mut data = SequencerData {
             tempo: 90.0,
             volume: 0.6,
-            metronome_active: true,
+            metronome_active: false,
             is_recording: false,
             ticks_per_quarter_note: 960,
             instrument_selected_id: 0,
@@ -68,6 +70,25 @@ impl SequencerData {
                 Message::SetTempo(x) => {
                     self.tempo = x;
                     self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;
+                },
+                Message::SetMetronomeActive(x) => {
+                    self.metronome_active = x;
+                },
+                Message::SetIsRecording(x) => {
+                    self.is_recording = x;
+                },
+                Message::NextInstrument => {
+                    self.instrument_selected_id += 1;
+                    if self.instrument_selected_id > self.insruments.len() - 1 {
+                        self.instrument_selected_id = 0;
+                    }
+                },
+                Message::PreviousInstrument => {
+                    if self.instrument_selected_id > 0 {
+                        self.instrument_selected_id -= 1;
+                    } else {
+                        self.instrument_selected_id = self.insruments.len() - 1;
+                    }
                 },
                 _ => (),
             }

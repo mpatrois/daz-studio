@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies.sdl2]
 version = "^0.35.2"
 default-features = false
-features = ["ttf"]
+features = ["ttf", "image"]
 
 [dependencies]
 midir = "0.8.0"

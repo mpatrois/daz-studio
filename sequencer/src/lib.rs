@@ -24,8 +24,6 @@ use crate::midimessage::NOTE_OFF;
 use std::sync::mpsc::Sender;
 
 pub enum Message {
-    InstrumentPrev,
-    InstrumentNext,
     Midi(MidiMessage),
 }
 
@@ -117,10 +115,9 @@ impl Sequencer {
         loop {
             let midi_message = self.fifo_queue_midi_message.read();
             if let Some(midi_message) = midi_message {
-                for i in 0..self.processors.len() {
-                    if self.processors[i].is_armed() {
-                        self.processors[i].add_notes_event(*midi_message); 
-                    }
+                let idx = self.data.instrument_selected_id;
+                if self.data.instrument_selected_id < self.processors.len() {
+                    self.processors[idx].add_notes_event(*midi_message); 
                 }
             } else {
                 break;
@@ -191,27 +188,26 @@ impl Sequencer {
     }
 
     pub fn note_on(&mut self, note_id: u8) {
-        for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() {
-                self.processors[i].note_on(note_id, 1.0);
-                if self.data.is_recording {
-                    self.fifo_queue_midi_message.write(
-                        MidiMessage {
-                            first: NOTE_ON,
-                            second: note_id,
-                            third: 127,
-                            tick: self.tick
-                        }
-                    );
-                }
+        let idx = self.data.instrument_selected_id;
+        if self.data.instrument_selected_id < self.processors.len() {
+            self.processors[idx].note_on(note_id, 1.0);
+            if self.data.is_recording {
+                self.fifo_queue_midi_message.write(
+                    MidiMessage {
+                        first: NOTE_ON,
+                        second: note_id,
+                        third: 127,
+                        tick: self.tick
+                    }
+                );
             }
         }
     }
 
     pub fn note_off(&mut self, note_id: u8) {
-        for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() {
-                self.processors[i].note_off(note_id);
+        let idx = self.data.instrument_selected_id;
+        if self.data.instrument_selected_id < self.processors.len() {
+            self.processors[idx].note_off(note_id);
                 if self.data.is_recording {
                     self.fifo_queue_midi_message.write(
                         MidiMessage {
@@ -222,36 +218,35 @@ impl Sequencer {
                         }
                     );
                 }
-            }
         }
     }
 
     pub fn clear_notes_events(&mut self, clear_all_instruments: bool) {
         for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() || clear_all_instruments {
+            if i == self.data.instrument_selected_id || clear_all_instruments {
                 self.processors[i].clear_notes_events();
             }
         }
     }
 
-    pub fn next_instrument(&mut self) {
-        self.data.instrument_selected_id += 1;
-        if self.data.instrument_selected_id > self.processors.len() - 1 {
-            self.data.instrument_selected_id = 0;
-        }
-        for (i, proc) in self.processors.iter_mut().enumerate() {
-            proc.set_is_armed(i == self.data.instrument_selected_id);
-        }
-    } 
+    // pub fn next_instrument(&mut self) {
+    //     self.data.instrument_selected_id += 1;
+    //     if self.data.instrument_selected_id > self.processors.len() - 1 {
+    //         self.data.instrument_selected_id = 0;
+    //     }
+    //     for (i, proc) in self.processors.iter_mut().enumerate() {
+    //         proc.set_is_armed(i == self.data.instrument_selected_id);
+    //     }
+    // } 
     
-    pub fn previous_instrument(&mut self) {
-        if self.data.instrument_selected_id > 0 {
-            self.data.instrument_selected_id -= 1;
-        } else {
-            self.data.instrument_selected_id = self.processors.len() - 1;
-        }
-        for (i, proc) in self.processors.iter_mut().enumerate() {
-            proc.set_is_armed(i == self.data.instrument_selected_id);
-        }
-    } 
+    // pub fn previous_instrument(&mut self) {
+    //     if self.data.instrument_selected_id > 0 {
+    //         self.data.instrument_selected_id -= 1;
+    //     } else {
+    //         self.data.instrument_selected_id = self.processors.len() - 1;
+    //     }
+    //     for (i, proc) in self.processors.iter_mut().enumerate() {
+    //         proc.set_is_armed(i == self.data.instrument_selected_id);
+    //     }
+    // } 
 }

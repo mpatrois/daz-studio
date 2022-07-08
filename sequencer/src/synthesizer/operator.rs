@@ -47,6 +47,10 @@ impl Operator {
         self.value = self.oscillate(self.current_angle) * self.adsr.tick() * self.volume;
         self.current_angle += self.angular_speed;
 
+        if self.current_angle > 2.0 * std::f32::consts::PI {
+            self.current_angle -= 2.0 * std::f32::consts::PI;
+        }
+
         if self.feedback == 0.0 {
             return self.value;
         } else {
@@ -58,6 +62,11 @@ impl Operator {
     pub fn tick_modulated(&mut self, modulation: f32) -> f32 {
         self.value = self.oscillate(self.current_angle + modulation) * self.adsr.tick() * self.volume;
         self.current_angle += self.angular_speed;
+        
+        if self.current_angle > 2.0 * std::f32::consts::PI {
+            self.current_angle -= 2.0 * std::f32::consts::PI;
+        }
+
         return self.value;
     }
 
