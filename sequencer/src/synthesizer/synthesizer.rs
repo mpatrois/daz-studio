@@ -115,6 +115,8 @@ impl Synthesizer {
 
 impl Processor for Synthesizer {
 
+    fn get_name(&self) -> String { "Synthesizer".to_string() }
+
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
         if self.nb_actives_notes < MAX_VOICES - 1 {
             let note_to_active = self.nb_actives_notes as usize;

@@ -24,22 +24,24 @@ use sdl2::render::TextureQuery;
 
 fn main() {
     
-    let (sequencer_sender, sequencer_receiver) = mpsc::channel::<sequencer::Message>();
+    let (event_sender, event_receiver) = mpsc::channel::<sequencer::Message>();
 
     let portaudio = portaudio::PortAudio::new().unwrap();
     let mut settings = portaudio.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER).unwrap();
     
     settings.flags = portaudio::stream_flags::CLIP_OFF;
 
-    let (data_ui, ui_sender) = SequencerData::new();
+    let (mut data_ui, ui_sender) = SequencerData::new();
 
     let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
+
+    data_ui.insruments = sequencer.data.insruments.clone();
 
     let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 
         sequencer.process(buffer.as_mut_ptr(), frames, CHANNELS as usize);
     
-        for msg in sequencer_receiver.try_recv() {
+        for msg in event_receiver.try_recv() {
             match msg {
                 sequencer::Message::InstrumentPrev => {
                     sequencer.previous_instrument();
@@ -73,9 +75,9 @@ fn main() {
         let in_ports = midi_in.ports();
         
         if in_ports.len() > 0 {
-            let sequencer_sender = sequencer_sender.clone();
+            let event_sender = event_sender.clone();
             let conn_in = midi_in.connect(&in_ports[0], "midir-read-input", move |_stamp, message, _| {
-                sequencer_sender.send( sequencer::Message::Midi( MidiMessage {
+                event_sender.send( sequencer::Message::Midi( MidiMessage {
                     first: message[0],
                     second: message[1],
                     third: message[2],
@@ -95,7 +97,7 @@ fn main() {
             ui_sender,
         ]
     };
-    launch_ui(sequencer_sender, data_ui, broadcast).unwrap();
+    launch_ui(event_sender, data_ui, broadcast).unwrap();
 }
 
 // Scale fonts to a reasonable size when they're too big (though they might look less smooth)
@@ -117,13 +119,13 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
         (rect_width as i32, rect_height as i32)
     };
 
-    let cx = (SCREEN_WIDTH as i32 - w) / 2;
-    let cy = (SCREEN_HEIGHT as i32 - h) / 2;
+    let cx = (cons_width as i32 - w) / 2;
+    let cy = (cons_height as i32 - h) / 2;
   
     Rect::new(cx, cy, w as u32, h as u32)
 }
 
-fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: SequencerData, broadcaster: DataBroadcaster) -> Result<(), String> {
+fn launch_ui(event_sender: Sender<sequencer::Message>, mut data_ui: SequencerData, broadcaster: DataBroadcaster) -> Result<(), String> {
     
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -146,7 +148,9 @@ fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: Sequence
 
     // Load a font
     let fonts_byte = include_bytes!("../resources/fonts/AbrilFatface-Regular.ttf");
+    let fonts_byte2 = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
     let font = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte)?, 40)?;
+    let font12 = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte2)?, 12)?;
 
     // render a surface, and convert it to a texture bound to the canvas
     let surface = font
@@ -188,7 +192,7 @@ fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: Sequence
 
                     let note = key_board_notes.get(&keycode); 
                     if note.is_some() {
-                        sequencer_sender.send(sequencer::Message::Midi(MidiMessage {
+                        event_sender.send(sequencer::Message::Midi(MidiMessage {
                             first: 0x9c,
                             second: *note.unwrap(),
                             third: 127,
@@ -204,8 +208,8 @@ fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: Sequence
 
                     match keycode {
                         Keycode::Escape => break 'running,
-                        Keycode::Left => sequencer_sender.send(sequencer::Message::InstrumentPrev).unwrap(),
-                        Keycode::Right => sequencer_sender.send(sequencer::Message::InstrumentNext).unwrap(),
+                        Keycode::Left => event_sender.send(sequencer::Message::InstrumentPrev).unwrap(),
+                        Keycode::Right => event_sender.send(sequencer::Message::InstrumentNext).unwrap(),
                         Keycode::B => {
                             let new_tempo = data_ui.tempo - 1.0;
                             broadcaster.send(Message::SetTempo(new_tempo));
@@ -215,7 +219,7 @@ fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: Sequence
                             broadcaster.send(Message::SetTempo(new_tempo));
                         },
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
-                            sequencer_sender.send(sequencer::Message::Midi(MidiMessage {
+                            event_sender.send(sequencer::Message::Midi(MidiMessage {
                                 first: 0x8c,
                                 second: *note,
                                 third: 127,
@@ -236,22 +240,42 @@ fn launch_ui(sequencer_sender: Sender<sequencer::Message>, mut data_ui: Sequence
             width,
             height,
             SCREEN_WIDTH,
-            SCREEN_HEIGHT,
+            SCREEN_HEIGHT / 2,
         );
     
         canvas.copy(&texture, None, Some(target))?;
         
-        
-        let surface_tempo = font
-            .render(&data_ui.tempo.to_string())
+        let surface_tempo = font12
+            .render(&["Tempo :", &data_ui.tempo.to_string()].join(" "))
             .blended(Color::RGBA(23, 96, 118, 255))
             .map_err(|e| e.to_string())?;
     
         let texture_tempo = texture_creator
             .create_texture_from_surface(&surface_tempo)
             .map_err(|e| e.to_string())?;
+
+        let TextureQuery { width: width_tempo, height: height_tempo, .. } = texture_tempo.query();
  
-        canvas.copy(&texture_tempo, None, Some(Rect::new(0, 0, 20, 20)))?;
+        canvas.copy(&texture_tempo, None, Some(Rect::new(20, 10, width_tempo, height_tempo)))?;
+
+        let mut i = 0;
+        let mut y = SCREEN_HEIGHT / 2;
+        for insrument in data_ui.insruments.iter() {
+            // println!("yes sir");
+            let surface_intrument_name = font12
+                .render(&insrument.name)
+                .blended(Color::RGBA(23, 96, 118, 255))
+                .map_err(|e| e.to_string())?;
+    
+            let texture_intrument_name = texture_creator
+                .create_texture_from_surface(&surface_intrument_name)
+                .map_err(|e| e.to_string())?;
+
+            let TextureQuery { width, height, .. } = texture_intrument_name.query();
+ 
+            canvas.copy(&texture_intrument_name, None, Some(Rect::new(20, (SCREEN_HEIGHT / 2) as i32 + 20 * i + 10, width, height)))?;
+            i += 1;
+        }
         
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));

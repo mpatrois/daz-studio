@@ -32,7 +32,7 @@ impl Preset for SynthesizerPreset {
         return self.id;
     }
 
-    fn get_name(self) -> String {
-        return self.name;
+    fn get_name(&self) -> String {
+        return self.name.clone();
     }
 }

@@ -24,6 +24,13 @@ impl DataBroadcaster {
     }
 }
 
+#[derive(Clone)]
+pub struct InstrumentData {
+    pub name: String,
+    pub preset_name: String,
+    pub volume: f32,
+}
+
 pub struct SequencerData {
     pub tempo: f32,
     pub tick_time: f32,
@@ -32,6 +39,7 @@ pub struct SequencerData {
     pub ticks_per_quarter_note: i32,
     pub is_recording: bool,
     pub instrument_selected_id: usize,
+    pub insruments: Vec<InstrumentData>,
     pub receiver: Receiver<Message>,
 }
 
@@ -47,6 +55,7 @@ impl SequencerData {
             ticks_per_quarter_note: 960,
             instrument_selected_id: 0,
             tick_time: 0.0,
+            insruments: Vec::new(),
             receiver
         };
         data.compute_tick_time();

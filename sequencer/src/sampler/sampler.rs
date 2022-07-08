@@ -61,6 +61,8 @@ impl Sampler {
 
 impl Processor for Sampler {
 
+    fn get_name(&self) -> String { "Sampler".to_string() }
+
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
         for sample_idx in 0..self.samples.len() {
             if self.samples[sample_idx].apply_to_note(midi_note) {

@@ -18,6 +18,7 @@ use crate::sampler::sampler::Sampler;
 use crate::midimessage::MidiMessage;
 use crate::fifoqueue::FifoQueue;
 use crate::sequencer_data::SequencerData;
+use crate::sequencer_data::InstrumentData;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
 use std::sync::mpsc::Sender;
@@ -29,7 +30,7 @@ pub enum Message {
 }
 
 pub struct Sequencer {
-    data: SequencerData,
+    pub data: SequencerData,
     sample_rate: f32,
     tick: i32,
     bars: i32,
@@ -71,6 +72,15 @@ impl Sequencer {
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
 
         sequencer.processors[0].set_is_armed(true);
+
+        for processor in sequencer.processors.iter() {
+            let preset = processor.get_current_preset();
+            sequencer.data.insruments.push(InstrumentData {
+                name: processor.get_name(),
+                preset_name: preset.get_name(),
+                volume: 1.0
+            });
+        }
 
         return (sequencer, sender);
     }
