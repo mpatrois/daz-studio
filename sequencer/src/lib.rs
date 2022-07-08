@@ -164,12 +164,12 @@ impl Sequencer {
         self.handle_incoming_note_events();
     }
 
-    pub fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         self.data.process_messages();
         self.update();
 
         for s in 0..(nb_channels * num_samples) {
-            unsafe { *outputs.offset(s as isize) = 0.0; }
+             outputs[s] = 0.0;
         }
 
         self.metronome.process(outputs, num_samples, nb_channels);
@@ -179,7 +179,7 @@ impl Sequencer {
         }
 
         for s in 0..(nb_channels * num_samples) {
-            unsafe { *outputs.offset(s as isize) *= self.data.volume; }
+            outputs[s] *= self.data.volume;
         }
     }
 

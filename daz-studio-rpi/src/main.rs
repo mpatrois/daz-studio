@@ -36,6 +36,7 @@ fn main() {
 
     let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
 
+    // Just for testing purpose, need to synchronise this after
     data_ui.insruments = sequencer.data.insruments.clone();
 
     let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
@@ -52,7 +53,7 @@ fn main() {
             }
         }
 
-        sequencer.process(buffer.as_mut_ptr(), frames, CHANNELS as usize);
+        sequencer.process(buffer, frames, CHANNELS as usize);
 
         portaudio::Continue
     };

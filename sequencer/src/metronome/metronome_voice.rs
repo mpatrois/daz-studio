@@ -14,13 +14,13 @@ impl MetronomeVoice {
             buffer: ptr::null()
         }
     }
-    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    pub fn render_next_block(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         unsafe {
             let mut i = 0;
             while i < num_samples * nb_channels {
                 if self.buffer_index < (*self.buffer).len() {
-                    *outputs.offset(i as isize) += (*self.buffer)[self.buffer_index];
-                    *outputs.offset((i + 1) as isize) += (*self.buffer)[self.buffer_index];
+                    outputs[i] += (*self.buffer)[self.buffer_index];
+                    outputs[i + 1] += (*self.buffer)[self.buffer_index];
                 } else {
                     self.active = false;
                 }

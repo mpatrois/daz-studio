@@ -91,7 +91,7 @@ impl Processor for Sampler {
         }
     }
 
-    fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if !self.voices[i].is_ended() {
