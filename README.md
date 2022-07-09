@@ -52,7 +52,7 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
   - [x] Polyphony
   - [ ] Monophony with glide <3
 - Sample based synth 
-    - [ ] Load sample from files
+    - [x] Load sample from files
     - [x] Play Samples
 - Effects
     - [ ] Reverb
@@ -64,8 +64,8 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
     - [ ] Quantize
 - UI/Controls
     - [ ] Play/Stop sequencer
-    - [ ] Toogle record mode
-    - [ ] Change current instrument 
+    - [x] Toogle record mode
+    - [x] Change current instrument 
     - [ ] Change current instrument preset
     - [ ] Change volume of instrument
     - [ ] Clear track
