@@ -72,14 +72,13 @@ impl Sequencer {
         sequencer.processors[0].set_is_armed(true);
 
         for processor in sequencer.processors.iter() {
-            let preset = processor.get_current_preset();
             sequencer.data.insruments.push(InstrumentData {
                 name: processor.get_name(),
-                preset_name: preset.get_name(),
-                volume: 1.0
+                volume: 1.0,
+                current_preset_id: processor.get_current_preset_id(),
+                presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
             });
         }
-
         return (sequencer, sender);
     }
 
@@ -166,6 +165,13 @@ impl Sequencer {
 
     pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         self.data.process_messages();
+
+        let mut i : usize = 0;
+        for instrument in self.data.insruments.iter() {
+            self.processors[i].set_current_preset_id(instrument.current_preset_id);
+            i += 1;
+        }
+
         self.update();
 
         for s in 0..(nb_channels * num_samples) {

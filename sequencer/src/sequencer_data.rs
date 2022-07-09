@@ -9,6 +9,8 @@ pub enum Message {
     SetMetronomeActive(bool),
     NextInstrument,
     PreviousInstrument,
+    NextPreset,
+    PreviousPreset,
     SetIsRecording(bool),
     SetCurrentInstrumentSelected(usize),
 }
@@ -29,8 +31,9 @@ impl DataBroadcaster {
 #[derive(Clone)]
 pub struct InstrumentData {
     pub name: String,
-    pub preset_name: String,
     pub volume: f32,
+    pub current_preset_id: usize,
+    pub presets: Vec<String>,
 }
 
 pub struct SequencerData {
@@ -88,6 +91,19 @@ impl SequencerData {
                         self.instrument_selected_id -= 1;
                     } else {
                         self.instrument_selected_id = self.insruments.len() - 1;
+                    }
+                },
+                Message::NextPreset => {
+                    self.insruments[self.instrument_selected_id].current_preset_id += 1;
+                    if self.insruments[self.instrument_selected_id].current_preset_id > self.insruments[self.instrument_selected_id].presets.len() - 1 {
+                        self.insruments[self.instrument_selected_id].current_preset_id = 0;
+                    }
+                },
+                Message::PreviousPreset => {
+                    if  self.insruments[self.instrument_selected_id].current_preset_id > 0  {
+                        self.insruments[self.instrument_selected_id].current_preset_id -= 1;
+                    } else {
+                        self.insruments[self.instrument_selected_id].current_preset_id = self.insruments[self.instrument_selected_id].presets.len() - 1;
                     }
                 },
                 _ => (),

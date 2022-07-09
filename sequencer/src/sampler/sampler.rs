@@ -20,6 +20,7 @@ pub struct Sampler {
     pub note_events: Vec<MidiMessage>,
     pub im_armed: bool,
     presets: Vec<SamplerPreset>,
+    preset_id: usize
 }
 
 impl Sampler {
@@ -42,7 +43,8 @@ impl Sampler {
             id: id,
             note_events: Vec::with_capacity(100),
             im_armed: false,
-            presets: Vec::new()
+            presets: Vec::new(),
+            preset_id: 0,
         };
 
         let sampler_preset_default = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
@@ -135,24 +137,20 @@ impl Processor for Sampler {
         return self.id;
     }
 
-    fn add_sample(&mut self, sample: Sample) {
-        self.samples.push(sample);
+    fn get_current_preset_id(&self) -> usize {
+        self.preset_id
     }
 
-    fn get_current_preset(&self) -> Box<dyn Preset> {
-        return Box::new(self.presets[0].clone());
+    fn set_current_preset_id(&mut self, id: usize) {
+        self.preset_id = id;
     }
 
     fn get_presets(&self) -> Vec<Box<dyn Preset>> {
-        let presets : Vec<Box<dyn Preset>> = Vec::new();
+        let mut presets : Vec<Box<dyn Preset>> = Vec::new();
+        for preset in &self.presets {
+            presets.push(Box::new(preset.clone()));
+        }
         return presets;
     }
     
-    fn next_presets(&self) {
-
-    }
-    
-    fn previous_presets(&self) {
-
-    }
 }
