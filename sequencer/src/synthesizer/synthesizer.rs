@@ -205,10 +205,12 @@ impl Processor for Synthesizer {
         return self.id;
     }
 
-    fn add_sample(&mut self, _sample: Sample) {}
+    fn get_current_preset_id(&self) -> usize {
+        self.preset_id
+    }
 
-    fn get_current_preset(&self) ->  Box<dyn Preset> {
-        Box::new(self.presets[self.preset_id].clone())
+    fn set_current_preset_id(&mut self, id: usize) {
+        self.preset_id = id;
     }
 
     fn get_presets(&self) -> Vec<Box<dyn Preset>> {
@@ -218,13 +220,4 @@ impl Processor for Synthesizer {
         }
         return presets;
     }
-    
-    fn next_presets(&self) {
-
-    }
-    
-    fn previous_presets(&self) {
-
-    }
-    
 }

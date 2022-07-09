@@ -16,10 +16,8 @@ pub trait Processor {
     fn get_id(&self) -> usize;
 
     fn get_name(&self) -> String;
-    fn get_current_preset(&self) -> Box<dyn Preset>;
-    fn get_presets(&self) -> Vec<Box<dyn Preset>>;
-    fn next_presets(&self);
-    fn previous_presets(&self);
 
-    fn add_sample(&mut self, sample: Sample);
+    fn set_current_preset_id(&mut self, id: usize);
+    fn get_current_preset_id(&self) -> usize;
+    fn get_presets(&self) -> Vec<Box<dyn Preset>>;
 }

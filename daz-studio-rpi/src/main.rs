@@ -146,7 +146,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
     // Load a font
     let fonts_byte = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
-    let font12 = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte)?, 12)?;
+    let font12px = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte)?, 12)?;
 
     let text_color = Color::RGBA(23, 96, 118, 255);
     let background_color = Color::RGB(217, 219, 241);
@@ -199,6 +199,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
                         Keycode::Escape => break 'running,
                         Keycode::Up => broadcaster.send(Message::PreviousInstrument),
                         Keycode::Down => broadcaster.send(Message::NextInstrument),
+                        Keycode::Left => broadcaster.send(Message::PreviousPreset),
+                        Keycode::Right => broadcaster.send(Message::NextPreset),
                         Keycode::V => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
                         Keycode::C => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
                         Keycode::B => {
@@ -228,18 +230,18 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         canvas.set_draw_color(Color::RGB(217, 219, 241));
         canvas.clear();
         
-        let target = get_centered_rect(
-            width,
-            height,
-            SCREEN_WIDTH,
-            (SCREEN_HEIGHT as f32 * 0.45) as u32,
-        );
+        // let target = get_centered_rect(
+        //     width,
+        //     height,
+        //     SCREEN_WIDTH,
+        //     (SCREEN_HEIGHT as f32 * 0.45) as u32,
+        // );
     
-        canvas.copy(&texture_logo, None, Some(target))?;
+        canvas.copy(&texture_logo, None, Some(Rect::new(SCREEN_WIDTH as i32/2, 0, width/3, height/3)))?;
         
         // Tempo
         {
-            let surface = font12
+            let surface = font12px
                 .render(&["BPM :", &data_ui.tempo.to_string()].join(" "))
                 .blended(text_color)
                 .map_err(|e| e.to_string())?;
@@ -254,7 +256,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
         // Metronome
         {
-            let surface = font12
+            let surface = font12px
                 .render(&["Metronome :", &data_ui.metronome_active.to_string()].join(" "))
                 .blended(text_color)
                 .map_err(|e| e.to_string())?;
@@ -269,7 +271,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         
         // Recording
         {
-            let surface = font12
+            let surface = font12px
                 .render(&["Recording :", &data_ui.is_recording.to_string()].join(" "))
                 .blended(text_color)
                 .map_err(|e| e.to_string())?;
@@ -283,7 +285,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         }
 
         let mut i : i32 = 0;
-        let mut y = SCREEN_HEIGHT as i32 / 2;
+        let mut y = 100;
+        let height_rect = 30;
         for insrument in data_ui.insruments.iter() {
 
             let mut color_name = text_color;
@@ -291,7 +294,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
                 color_name = background_color;
             }
 
-            let surface_intrument_name = font12
+            let surface_intrument_name = font12px
                 .render(&insrument.name)
                 .blended(color_name)
                 .map_err(|e| e.to_string())?;
@@ -299,22 +302,33 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
             let texture_intrument_name = texture_creator
                 .create_texture_from_surface(&surface_intrument_name)
                 .map_err(|e| e.to_string())?;
+            
+            let surface_intrument_preset = font12px
+                .render(&insrument.presets[insrument.current_preset_id])
+                .blended(color_name)
+                .map_err(|e| e.to_string())?;
+    
+            let texture_intrument_preset = texture_creator
+                .create_texture_from_surface(&surface_intrument_preset)
+                .map_err(|e| e.to_string())?;
 
             let TextureQuery { width, height, .. } = texture_intrument_name.query();
+            let TextureQuery { width: width_preset, height: height_preset, .. } = texture_intrument_name.query();
             
             canvas.set_draw_color(text_color);
 
             if data_ui.instrument_selected_id as i32 == i {
-                canvas.fill_rect(Rect::new(20, y, 100, 20))?;
+                canvas.fill_rect(Rect::new(20, y, 100, height_rect))?;
                 canvas.set_draw_color(Color::RGB(217, 219, 241));
             } else {
-                canvas.draw_rect(Rect::new(20, y, 100, 20))?;
+                canvas.draw_rect(Rect::new(20, y, 100, height_rect))?;
             }
 
             canvas.copy(&texture_intrument_name, None, Some(Rect::new(20, y, width, height)))?;
+            canvas.copy(&texture_intrument_preset, None, Some(Rect::new(20, y + height as i32, width_preset, height_preset)))?;
 
             i += 1;
-            y += 30
+            y += height_rect as i32 + 5
         }
         
         canvas.present();
