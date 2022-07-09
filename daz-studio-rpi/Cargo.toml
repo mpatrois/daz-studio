@@ -6,11 +6,10 @@ edition = "2018"
 [dependencies.sdl2]
 version = "^0.35.2"
 default-features = false
-features = ["ttf"]
+features = ["ttf", "image"]
 
 [dependencies]
 midir = "0.8.0"
 portaudio = { git = "https://github.com/RustAudio/rust-portaudio.git", branch = "master" }
 biquad = "0.4.2"
 sequencer = { path = "../sequencer" }
-

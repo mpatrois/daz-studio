@@ -2,6 +2,9 @@ use crate::processor::Processor;
 use crate::midimessage::MidiMessage;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
+use crate::sampler::sampler_preset::SamplerPreset;
+// use crate::sampler::sampler_preset::SampleInfo;
+use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;
 
@@ -13,13 +16,14 @@ pub struct Sampler {
     pub decay: f32,
     pub sustain: f32,
     pub release: f32,
-    pub id: i32,
+    pub id: usize,
     pub note_events: Vec<MidiMessage>,
-    pub im_armed: bool
+    pub im_armed: bool,
+    presets: Vec<SamplerPreset>,
 }
 
 impl Sampler {
-    pub fn new(sample_rate: f32, id: i32) -> Sampler {
+    pub fn new(sample_rate: f32, id: usize) -> Sampler {
 
         let mut voices : Vec<SamplerVoice> = Vec::new();
 
@@ -27,7 +31,7 @@ impl Sampler {
             voices.push(SamplerVoice::new(sample_rate))
         }
 
-        return Sampler {
+        let mut sampler = Sampler {
             voices: voices,
             nb_actives_notes: 0,
             samples: Vec::new(),
@@ -38,11 +42,26 @@ impl Sampler {
             id: id,
             note_events: Vec::with_capacity(100),
             im_armed: false,
+            presets: Vec::new()
         };
+
+        let sampler_preset_default = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
+        sampler.presets.push(sampler_preset_default.unwrap());
+
+        let first_preset = sampler.presets[0].clone();
+
+        for sample_info in first_preset.samples.iter() {
+            let sample = Sample::load_sample(sample_info, sample_rate);
+            sampler.samples.push(sample);
+        }
+
+        return sampler;
     }
 }
 
 impl Processor for Sampler {
+
+    fn get_name(&self) -> String { "Sampler".to_string() }
 
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
         for sample_idx in 0..self.samples.len() {
@@ -72,7 +91,7 @@ impl Processor for Sampler {
         }
     }
 
-    fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if !self.voices[i].is_ended() {
@@ -112,11 +131,28 @@ impl Processor for Sampler {
         self.im_armed = is_armed;
     }
 
-    fn get_id(&self) -> i32 {
+    fn get_id(&self) -> usize {
         return self.id;
     }
 
     fn add_sample(&mut self, sample: Sample) {
         self.samples.push(sample);
+    }
+
+    fn get_current_preset(&self) -> Box<dyn Preset> {
+        return Box::new(self.presets[0].clone());
+    }
+
+    fn get_presets(&self) -> Vec<Box<dyn Preset>> {
+        let presets : Vec<Box<dyn Preset>> = Vec::new();
+        return presets;
+    }
+    
+    fn next_presets(&self) {
+
+    }
+    
+    fn previous_presets(&self) {
+
     }
 }

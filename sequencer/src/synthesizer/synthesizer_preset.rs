@@ -1,11 +1,13 @@
 
 const NB_OPERATORS : usize = 4;
 
+use crate::preset::Preset;
 
 // use biquad;
 
 #[derive(Clone)]
 pub struct SynthesizerPreset {
+    pub id: usize,
     pub name: String,
     pub algorithm: u8,
     pub nb_voices: usize, 
@@ -22,4 +24,15 @@ pub struct SynthesizerPreset {
     pub oscx_adsr_decay: [f32; NB_OPERATORS],
     pub oscx_adsr_release: [f32; NB_OPERATORS],
     pub oscx_adsr_sustain: [f32; NB_OPERATORS],
+}
+
+
+impl Preset for SynthesizerPreset {
+    fn get_id(self) -> usize {
+        return self.id;
+    }
+
+    fn get_name(&self) -> String {
+        return self.name.clone();
+    }
 }

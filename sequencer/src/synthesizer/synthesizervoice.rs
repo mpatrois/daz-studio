@@ -71,64 +71,62 @@ impl SynthesizerVoice {
         }
     }
 
-    pub fn render_next_block(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) { 
-        unsafe {
-            let mut out = 0.0;
-            let mut idx = 0;
-            while idx < nb_channels * num_samples {
+    pub fn render_next_block(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) { 
+        let mut out = 0.0;
+        let mut idx = 0;
+        while idx < nb_channels * num_samples {
 
-                if self.algorithm == 1 {
-                    self.operators[OP_D].tick();
-                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                    self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                    let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
-                    out = op0;
-                }
-
-                if self.algorithm == 5 {
-                    self.operators[OP_D].tick();
-                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                    let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                    let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_C].value);
-                    out = op1 + op0;
-                }
-
-                if self.algorithm == 6 {
-                    self.operators[OP_D].tick();
-                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                    let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                    let op0 = self.operators[OP_A].tick();
-                    out = op0 + op1;
-                }
-
-                if self.algorithm == 8 {
-                    self.operators[OP_D].tick();
-                    let op_c = self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                    self.operators[OP_B].tick();
-                    let op_a = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
-                    out = op_a + op_c;
-                }
-
-                if self.algorithm == 11 {
-                    let op3 = self.operators[OP_D].tick();
-                    let op2 = self.operators[OP_C].tick();
-                    let op1 = self.operators[OP_B].tick();
-                    let op0 = self.operators[OP_A].tick();
-                    out = op3 + op2 + op1 + op0;
-                }
-
-                out = self.biquad_filter.run(out);
-
-                *outputs.offset(idx as isize) += out;
-                *outputs.offset((idx + 1) as isize) += out;
-
-                idx += 2;
+            if self.algorithm == 1 {
+                self.operators[OP_D].tick();
+                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
+                out = op0;
             }
+
+            if self.algorithm == 5 {
+                self.operators[OP_D].tick();
+                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_C].value);
+                out = op1 + op0;
+            }
+
+            if self.algorithm == 6 {
+                self.operators[OP_D].tick();
+                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                let op0 = self.operators[OP_A].tick();
+                out = op0 + op1;
+            }
+
+            if self.algorithm == 8 {
+                self.operators[OP_D].tick();
+                let op_c = self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                self.operators[OP_B].tick();
+                let op_a = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
+                out = op_a + op_c;
+            }
+
+            if self.algorithm == 11 {
+                let op3 = self.operators[OP_D].tick();
+                let op2 = self.operators[OP_C].tick();
+                let op1 = self.operators[OP_B].tick();
+                let op0 = self.operators[OP_A].tick();
+                out = op3 + op2 + op1 + op0;
+            }
+
+            out = self.biquad_filter.run(out);
+
+            outputs[idx] += out;
+            outputs[idx + 1] += out;
+
+            idx += 2;
+        }
+        
+        if out.abs() <= 0.000000000001 {
             
-            if out.abs() <= 0.000000000001 {
-                
-                self.active = false;
-            }
+            self.active = false;
         }
     }
 

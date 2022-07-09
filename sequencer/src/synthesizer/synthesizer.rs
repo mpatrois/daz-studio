@@ -8,6 +8,7 @@ use crate::synthesizer::operator::SAW_ANALOGIC_4;
 use crate::synthesizer::operator::SAW_DIGITAL;
 use crate::synthesizer::operator::OSC_OFF;
 use crate::synthesizer::synthesizer_preset::SynthesizerPreset;
+use crate::preset::Preset;
 
 use crate::decibels::db_to_gain;
 
@@ -19,7 +20,7 @@ const MAX_VOICES : usize = 8;
 pub struct Synthesizer {
     voices: Vec<SynthesizerVoice>,
     nb_actives_notes: usize,
-    pub id: i32,
+    pub id: usize,
     pub note_events: Vec<MidiMessage>,
     im_armed: bool,
     sample_rate: f32,
@@ -28,7 +29,7 @@ pub struct Synthesizer {
 }
 
 impl Synthesizer {
-    pub fn new(sample_rate: f32, id: i32) -> Synthesizer {
+    pub fn new(sample_rate: f32, id: usize, preset_id: usize) -> Synthesizer {
 
         let mut voices : Vec<SynthesizerVoice> = Vec::new();
 
@@ -44,10 +45,11 @@ impl Synthesizer {
             im_armed: false,
             sample_rate: sample_rate,
             presets: Vec::new(),
-            preset_id: 0
+            preset_id: preset_id
         };
 
         synth.presets.push(SynthesizerPreset {
+            id: 0,
             name: "Guitar bass".to_string(),
             algorithm: 5,
             nb_voices: 1,
@@ -67,6 +69,7 @@ impl Synthesizer {
         });
         
         synth.presets.push(SynthesizerPreset {
+            id: 1,
             name: "G-FUNK bass".to_string(),
             algorithm: 11,
             nb_voices: 1,
@@ -86,14 +89,15 @@ impl Synthesizer {
         });
 
         synth.presets.push(SynthesizerPreset {
+            id: 2,
             name: "G-FUNK lead".to_string(),
             algorithm: 11,
             nb_voices: 1,
-            filter_type: Type::BandPass,
+            filter_type: Type::LowPass,
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
 
-            oscx_coarse: [0.5, 0.5, 3.98, 4.],
+            oscx_coarse: [0.5, 0.5, 3.98, 2.],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-1.0), db_to_gain(-1.0)],
             oscx_osc_type: [OSC_OFF, OSC_OFF, SAW_DIGITAL, SAW_DIGITAL],
             oscx_phase_offset: [0.0, 0.0, 0., 0.],
@@ -110,6 +114,8 @@ impl Synthesizer {
 
 
 impl Processor for Synthesizer {
+
+    fn get_name(&self) -> String { "Synthesizer".to_string() }
 
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
         if self.nb_actives_notes < MAX_VOICES - 1 {
@@ -155,7 +161,7 @@ impl Processor for Synthesizer {
         }
     }
 
-    fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if !self.voices[i].is_ended() {
@@ -195,10 +201,30 @@ impl Processor for Synthesizer {
         self.im_armed = is_armed;
     }
 
-    fn get_id(&self) -> i32 {
+    fn get_id(&self) -> usize {
         return self.id;
     }
 
     fn add_sample(&mut self, _sample: Sample) {}
+
+    fn get_current_preset(&self) ->  Box<dyn Preset> {
+        Box::new(self.presets[self.preset_id].clone())
+    }
+
+    fn get_presets(&self) -> Vec<Box<dyn Preset>> {
+        let mut presets : Vec<Box<dyn Preset>> = Vec::new();
+        for preset in &self.presets {
+            presets.push(Box::new(preset.clone()));
+        }
+        return presets;
+    }
+    
+    fn next_presets(&self) {
+
+    }
+    
+    fn previous_presets(&self) {
+
+    }
     
 }

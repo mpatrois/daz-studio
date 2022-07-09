@@ -1,80 +1,86 @@
 pub mod metronome;
 pub mod oscillator;
 pub mod synthesizer;
-pub mod sampler;
 pub mod adsr;
 pub mod decibels;
 pub mod midimessage;
 pub mod processor;
 pub mod fifoqueue;
+pub mod sampler;
 pub mod noise;
+pub mod preset;
+pub mod sequencer_data;
 
 use crate::processor::Processor;
 use crate::metronome::metronome::Metronome;
 use crate::synthesizer::synthesizer::Synthesizer;
+use crate::sampler::sampler::Sampler;
 use crate::midimessage::MidiMessage;
 use crate::fifoqueue::FifoQueue;
+use crate::sequencer_data::SequencerData;
+use crate::sequencer_data::InstrumentData;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
+use std::sync::mpsc::Sender;
+
+pub enum Message {
+    Midi(MidiMessage),
+}
 
 pub struct Sequencer {
-    pub sample_rate: f32,
-    pub tick: i32,
-    pub bars: i32,
-    tick_time: f32,
-    ticks_per_quarter_note: i32,
+    pub data: SequencerData,
+    sample_rate: f32,
+    tick: i32,
+    bars: i32,
     time_accumulated: f32,
-    tempo: f32,
-    volume: f32,
     elapsed_time_each_render: f32,
     metronome: Metronome,
-    pub metronome_active: bool,
-    pub buffer_size: usize,
-    pub processors: Vec<Box<dyn Processor + Send>>,
-    pub selected_preset_id: i32,
-    pub is_recording: bool,
-    pub fifo_queue_midi_message: FifoQueue<MidiMessage>,
-    pub bpm_has_biped: bool,
+    buffer_size: usize,
+    processors: Vec<Box<dyn Processor>>,
+    fifo_queue_midi_message: FifoQueue<MidiMessage>,
+    bpm_has_biped: bool,
 }
 
 impl Sequencer {
-    pub fn new(sample_rate: f32, buffer_size: usize) -> Sequencer {
+    pub fn new(sample_rate: f32, buffer_size: usize) -> (Sequencer, Sender<sequencer_data::Message>) {
         
         let metronome = Metronome::new(sample_rate);
+
+        let (data, sender) = SequencerData::new();
 
         let mut sequencer = Sequencer {
             sample_rate: sample_rate,
             tick: 0,
-            tick_time: 0.0,
-            ticks_per_quarter_note: 960,
             time_accumulated: 0.0,
-            tempo: 10.0,
-            volume: 0.6,
             elapsed_time_each_render: 0.0,
             metronome: metronome,
-            metronome_active: true,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            selected_preset_id: 0,
             bars: 2,
-            is_recording: false,
             fifo_queue_midi_message: FifoQueue::new(64),
-            bpm_has_biped: false
+            bpm_has_biped: false,
+            data,
         };
-        sequencer.set_tempo(90.0);
+
         sequencer.compute_elapsed_time_each_render();
 
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 4)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 5)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 6)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 7)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 8)));
-        return sequencer;
-    }
+        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 0)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
 
-    pub fn set_tempo(&mut self, tempo: f32) {
-        self.tempo = tempo;
-        self.compute_tick_time();
+        sequencer.processors[0].set_is_armed(true);
+
+        for processor in sequencer.processors.iter() {
+            let preset = processor.get_current_preset();
+            sequencer.data.insruments.push(InstrumentData {
+                name: processor.get_name(),
+                preset_name: preset.get_name(),
+                volume: 1.0
+            });
+        }
+
+        return (sequencer, sender);
     }
 
     pub fn set_bars(&mut self, bars: i32) {
@@ -83,15 +89,11 @@ impl Sequencer {
     }
 
     pub fn set_is_recording(&mut self, is_recording: bool) {
-        self.is_recording = is_recording;
+        self.data.is_recording = is_recording;
     }
     
     pub fn set_volume(&mut self, volume: f32) {
-        self.volume = volume;
-    }
-    
-    pub fn compute_tick_time(&mut self) {
-        self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;
+        self.data.volume = volume;
     }
 
     pub fn compute_elapsed_time_each_render(&mut self) {
@@ -99,9 +101,9 @@ impl Sequencer {
     }
 
     pub fn metronomome_tick(&mut self) -> bool {
-        if self.tick % self.ticks_per_quarter_note == 0 {
-            let start_bar = self.tick % (self.ticks_per_quarter_note * 4) == 0;
-            if self.metronome_active {
+        if self.tick % self.data.ticks_per_quarter_note == 0 {
+            let start_bar = self.tick % (self.data.ticks_per_quarter_note * 4) == 0;
+            if self.data.metronome_active {
                 self.metronome.bip(start_bar);
             }
             return true;
@@ -113,10 +115,9 @@ impl Sequencer {
         loop {
             let midi_message = self.fifo_queue_midi_message.read();
             if let Some(midi_message) = midi_message {
-                for i in 0..self.processors.len() {
-                    if self.processors[i].is_armed() {
-                        self.processors[i].add_notes_event(*midi_message); 
-                    }
+                let idx = self.data.instrument_selected_id;
+                if self.data.instrument_selected_id < self.processors.len() {
+                    self.processors[idx].add_notes_event(*midi_message); 
                 }
             } else {
                 break;
@@ -144,8 +145,8 @@ impl Sequencer {
     pub fn update(&mut self) {
         self.bpm_has_biped = false;
         self.time_accumulated += self.elapsed_time_each_render;
-        while self.time_accumulated >= self.tick_time {
-            self.time_accumulated -= self.tick_time;
+        while self.time_accumulated >= self.data.tick_time {
+            self.time_accumulated -= self.data.tick_time;
             
           
             if !self.bpm_has_biped {
@@ -156,18 +157,19 @@ impl Sequencer {
 
             self.tick += 1;
 
-            if self.tick >= self.bars * self.ticks_per_quarter_note * 4 {
+            if self.tick >= self.bars * self.data.ticks_per_quarter_note * 4 {
                 self.tick = 0;
             }
         }
         self.handle_incoming_note_events();
     }
 
-    pub fn process(&mut self, outputs: *mut f32, num_samples: usize, nb_channels: usize) {
+    pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
+        self.data.process_messages();
         self.update();
 
         for s in 0..(nb_channels * num_samples) {
-            unsafe { *outputs.offset(s as isize) = 0.0; }
+             outputs[s] = 0.0;
         }
 
         self.metronome.process(outputs, num_samples, nb_channels);
@@ -177,7 +179,7 @@ impl Sequencer {
         }
 
         for s in 0..(nb_channels * num_samples) {
-            unsafe { *outputs.offset(s as isize) *= self.volume; }
+            outputs[s] *= self.data.volume;
         }
     }
 
@@ -186,28 +188,27 @@ impl Sequencer {
     }
 
     pub fn note_on(&mut self, note_id: u8) {
-        for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() {
-                self.processors[i].note_on(note_id, 1.0);
-                if self.is_recording {
-                    self.fifo_queue_midi_message.write(
-                        MidiMessage {
-                            first: NOTE_ON,
-                            second: note_id,
-                            third: 127,
-                            tick: self.tick
-                        }
-                    );
-                }
+        let idx = self.data.instrument_selected_id;
+        if self.data.instrument_selected_id < self.processors.len() {
+            self.processors[idx].note_on(note_id, 1.0);
+            if self.data.is_recording {
+                self.fifo_queue_midi_message.write(
+                    MidiMessage {
+                        first: NOTE_ON,
+                        second: note_id,
+                        third: 127,
+                        tick: self.tick
+                    }
+                );
             }
         }
     }
 
     pub fn note_off(&mut self, note_id: u8) {
-        for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() {
-                self.processors[i].note_off(note_id);
-                if self.is_recording {
+        let idx = self.data.instrument_selected_id;
+        if self.data.instrument_selected_id < self.processors.len() {
+            self.processors[idx].note_off(note_id);
+                if self.data.is_recording {
                     self.fifo_queue_midi_message.write(
                         MidiMessage {
                             first: NOTE_OFF,
@@ -217,15 +218,35 @@ impl Sequencer {
                         }
                     );
                 }
-            }
         }
     }
 
     pub fn clear_notes_events(&mut self, clear_all_instruments: bool) {
         for i in 0..self.processors.len() {
-            if self.processors[i].is_armed() || clear_all_instruments {
+            if i == self.data.instrument_selected_id || clear_all_instruments {
                 self.processors[i].clear_notes_events();
             }
         }
     }
+
+    // pub fn next_instrument(&mut self) {
+    //     self.data.instrument_selected_id += 1;
+    //     if self.data.instrument_selected_id > self.processors.len() - 1 {
+    //         self.data.instrument_selected_id = 0;
+    //     }
+    //     for (i, proc) in self.processors.iter_mut().enumerate() {
+    //         proc.set_is_armed(i == self.data.instrument_selected_id);
+    //     }
+    // } 
+    
+    // pub fn previous_instrument(&mut self) {
+    //     if self.data.instrument_selected_id > 0 {
+    //         self.data.instrument_selected_id -= 1;
+    //     } else {
+    //         self.data.instrument_selected_id = self.processors.len() - 1;
+    //     }
+    //     for (i, proc) in self.processors.iter_mut().enumerate() {
+    //         proc.set_is_armed(i == self.data.instrument_selected_id);
+    //     }
+    // } 
 }

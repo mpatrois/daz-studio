@@ -1,0 +1,38 @@
+{
+    "attack": 0.0,
+    "decay": 6.0,
+    "sustain": 1.0,
+    "release": 0.74,
+    "name": "Daz Funk",
+    "id": 0,
+    "samples": [
+        {
+            "root_midi_note": 52,
+            "note_midi_min": 52,
+            "note_midi_max": 52,
+            "filepath": "./data/sampler-presets/Daz-Funk/hihat.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 53,
+            "note_midi_min": 53,
+            "note_midi_max": 53,
+            "filepath": "./data/sampler-presets/Daz-Funk/kick.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 54,
+            "note_midi_min": 54,
+            "note_midi_max": 54,
+            "filepath": "./data/sampler-presets/Daz-Funk/openhat.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 55,
+            "note_midi_min": 55,
+            "note_midi_max": 55,
+            "filepath": "./data/sampler-presets/Daz-Funk/snare.wav",
+            "is_one_shot": true
+        }
+    ]
+}

@@ -1,39 +1,48 @@
+use std::fs::File;
+// use std::path::Path;
+use crate::sampler::sampler_preset::SampleInfo;
+// use wav_io::{, header::*, tone};
 
 pub struct Sample {
     pub sample_rate: f32,
-    // pub midi_note: i8,
     pub left_channel: Vec<f32>,
     pub right_channel: Vec<f32>,
     pub size: usize,
     pub root_midi_note: u8,
     pub note_midi_min: u8,
     pub note_midi_max: u8,
-    pub loop_crossfade_duration: usize,
-    pub loop_length: usize
+    pub is_one_shot: bool
 }
 
 impl Sample {
-    pub fn new(array_ptr: *const f32, data_size: usize, sample_rate: f32) -> Sample {
-        let length_channel = data_size / 2;
-        let mut left_channel : Vec<f32> = Vec::with_capacity(data_size / 2);
-        let mut right_channel : Vec<f32> = Vec::with_capacity(data_size / 2);
-        for i in 0..length_channel {
-            unsafe {
-                left_channel.push(*array_ptr.offset((i) as isize));
-                right_channel.push(*array_ptr.offset((length_channel + i) as isize))
+    pub fn load_sample(sample_info: &SampleInfo, sample_rate: f32) -> Sample {
+        let file_in = File::open(sample_info.filepath.clone()).unwrap();
+        let (header, samples) = wav_io::read_from_file(file_in).unwrap();
+
+        let mut left_channel: Vec<f32> = Vec::with_capacity(samples.len());
+        let mut right_channel: Vec<f32> = Vec::with_capacity(samples.len());
+
+        if header.channels == 1 {
+            left_channel = samples.clone();
+            right_channel = samples.clone();
+        } else if header.channels == 2 {
+            let mut i = 0;
+            while i < samples.len() {
+                left_channel.push(samples[i]);
+                right_channel.push(samples[i+1]);
+                i += 2;
             }
         }
+    
         return Sample {
             sample_rate: sample_rate,
-            // midi_note: 67,
+            size: left_channel.len(),
             left_channel: left_channel,
             right_channel: right_channel,
-            size: length_channel,
-            root_midi_note: 60,
-            note_midi_min: 0,
-            note_midi_max: 0,
-            loop_crossfade_duration: 0,
-            loop_length: 0,
+            root_midi_note: sample_info.root_midi_note,
+            note_midi_min: sample_info.note_midi_min,
+            note_midi_max: sample_info.note_midi_max,
+            is_one_shot: sample_info.is_one_shot
         }
     }
 
