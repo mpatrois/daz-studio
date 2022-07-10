@@ -38,6 +38,7 @@ pub struct InstrumentData {
 
 pub struct SequencerData {
     pub tempo: f32,
+    pub tick: i32,
     pub tick_time: f32,
     pub volume: f32,
     pub metronome_active: bool,
@@ -53,6 +54,7 @@ impl SequencerData {
     pub fn new() -> (SequencerData, Sender<Message>) {
         let (sender, receiver) = mpsc::channel::<Message>();
         let mut data = SequencerData {
+            tick: 0,
             tempo: 90.0,
             volume: 0.6,
             metronome_active: false,

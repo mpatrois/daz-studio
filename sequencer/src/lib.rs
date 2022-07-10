@@ -30,7 +30,6 @@ pub enum Message {
 pub struct Sequencer {
     pub data: SequencerData,
     sample_rate: f32,
-    tick: i32,
     bars: i32,
     time_accumulated: f32,
     elapsed_time_each_render: f32,
@@ -50,7 +49,6 @@ impl Sequencer {
 
         let mut sequencer = Sequencer {
             sample_rate: sample_rate,
-            tick: 0,
             time_accumulated: 0.0,
             elapsed_time_each_render: 0.0,
             metronome: metronome,
@@ -83,7 +81,7 @@ impl Sequencer {
     }
 
     pub fn set_bars(&mut self, bars: i32) {
-        self.tick = 0;
+        self.data.tick = 0;
         self.bars = bars;
     }
 
@@ -100,8 +98,8 @@ impl Sequencer {
     }
 
     pub fn metronomome_tick(&mut self) -> bool {
-        if self.tick % self.data.ticks_per_quarter_note == 0 {
-            let start_bar = self.tick % (self.data.ticks_per_quarter_note * 4) == 0;
+        if self.data.tick % self.data.ticks_per_quarter_note == 0 {
+            let start_bar = self.data.tick % (self.data.ticks_per_quarter_note * 4) == 0;
             if self.data.metronome_active {
                 self.metronome.bip(start_bar);
             }
@@ -127,7 +125,7 @@ impl Sequencer {
     pub fn play_recorded_note_events(&mut self) {
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
-                if self.processors[i].get_notes_events()[k].tick == self.tick {
+                if self.processors[i].get_notes_events()[k].tick == self.data.tick {
                     if self.processors[i].get_notes_events()[k].first == NOTE_OFF as u8 {
                         let note_id = self.processors[i].get_notes_events()[k].second;
                         self.processors[i].note_off(note_id);
@@ -146,7 +144,6 @@ impl Sequencer {
         self.time_accumulated += self.elapsed_time_each_render;
         while self.time_accumulated >= self.data.tick_time {
             self.time_accumulated -= self.data.tick_time;
-            
           
             if !self.bpm_has_biped {
                 self.bpm_has_biped = self.metronomome_tick();
@@ -154,10 +151,10 @@ impl Sequencer {
 
             self.play_recorded_note_events();
 
-            self.tick += 1;
+            self.data.tick += 1;
 
-            if self.tick >= self.bars * self.data.ticks_per_quarter_note * 4 {
-                self.tick = 0;
+            if self.data.tick >= self.bars * self.data.ticks_per_quarter_note * 4 {
+                self.data.tick = 0;
             }
         }
         self.handle_incoming_note_events();
@@ -190,7 +187,7 @@ impl Sequencer {
     }
 
     pub fn get_tick(&self) -> i32 {
-        return self.tick;
+        return self.data.tick;
     }
 
     pub fn note_on(&mut self, note_id: u8) {
@@ -203,7 +200,7 @@ impl Sequencer {
                         first: NOTE_ON,
                         second: note_id,
                         third: 127,
-                        tick: self.tick
+                        tick: self.data.tick
                     }
                 );
             }
@@ -220,7 +217,7 @@ impl Sequencer {
                             first: NOTE_OFF,
                             second: note_id,
                             third: 127,
-                            tick: self.tick
+                            tick: self.data.tick
                         }
                     );
                 }
@@ -235,24 +232,4 @@ impl Sequencer {
         }
     }
 
-    // pub fn next_instrument(&mut self) {
-    //     self.data.instrument_selected_id += 1;
-    //     if self.data.instrument_selected_id > self.processors.len() - 1 {
-    //         self.data.instrument_selected_id = 0;
-    //     }
-    //     for (i, proc) in self.processors.iter_mut().enumerate() {
-    //         proc.set_is_armed(i == self.data.instrument_selected_id);
-    //     }
-    // } 
-    
-    // pub fn previous_instrument(&mut self) {
-    //     if self.data.instrument_selected_id > 0 {
-    //         self.data.instrument_selected_id -= 1;
-    //     } else {
-    //         self.data.instrument_selected_id = self.processors.len() - 1;
-    //     }
-    //     for (i, proc) in self.processors.iter_mut().enumerate() {
-    //         proc.set_is_armed(i == self.data.instrument_selected_id);
-    //     }
-    // } 
 }

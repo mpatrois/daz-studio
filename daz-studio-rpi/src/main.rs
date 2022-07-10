@@ -96,29 +96,6 @@ fn main() {
     launch_ui(midi_event_sender, data_ui, broadcast).unwrap();
 }
 
-// Scale fonts to a reasonable size when they're too big (though they might look less smooth)
-fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_height: u32) -> Rect {
-    let wr = rect_width as f32 / cons_width as f32;
-    let hr = rect_height as f32 / cons_height as f32;
-
-    let (w, h) = if wr > 1f32 || hr > 1f32 {
-        if wr > hr {
-            let h = (rect_height as f32 / wr) as i32;
-            (cons_width as i32, h)
-        } else {
-            let w = (rect_width as f32 / hr) as i32;
-            (w, cons_height as i32)
-        }
-    } else {
-        (rect_width as i32, rect_height as i32)
-    };
-
-    let cx = (cons_width as i32 - w) / 2;
-    let cy = (cons_height as i32 - h) / 2;
-  
-    Rect::new(cx, cy, w as u32, h as u32)
-}
-
 fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: SequencerData, broadcaster: DataBroadcaster) -> Result<(), String> {
     
     let sdl_context = sdl2::init()?;
@@ -140,7 +117,6 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
     let texture_creator = canvas.texture_creator();
 
-    // let texture_creator = canvas.texture_creator();
     let logo_bytes = include_bytes!("../resources/images/daz.png");
     let texture_logo = texture_creator.load_texture_bytes(logo_bytes)?;
 
@@ -230,14 +206,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         canvas.set_draw_color(Color::RGB(217, 219, 241));
         canvas.clear();
         
-        // let target = get_centered_rect(
-        //     width,
-        //     height,
-        //     SCREEN_WIDTH,
-        //     (SCREEN_HEIGHT as f32 * 0.45) as u32,
-        // );
-    
-        canvas.copy(&texture_logo, None, Some(Rect::new(SCREEN_WIDTH as i32/2, 0, width/3, height/3)))?;
+        canvas.copy(&texture_logo, None, Some(Rect::new(SCREEN_WIDTH as i32/2, SCREEN_HEIGHT  as i32 / 2 - (height as i32/3) / 2, width/3, height/3)))?;
         
         // Tempo
         {
@@ -313,7 +282,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
                 .map_err(|e| e.to_string())?;
 
             let TextureQuery { width, height, .. } = texture_intrument_name.query();
-            let TextureQuery { width: width_preset, height: height_preset, .. } = texture_intrument_name.query();
+            let TextureQuery { width: width_preset, height: height_preset, .. } = texture_intrument_preset.query();
             
             canvas.set_draw_color(text_color);
 
