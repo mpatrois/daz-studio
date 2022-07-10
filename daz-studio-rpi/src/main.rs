@@ -111,8 +111,6 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
 
-    canvas.set_draw_color(Color::RGB(217, 219, 241));
-
     let mut event_pump = sdl_context.event_pump()?;
 
     let texture_creator = canvas.texture_creator();
@@ -124,8 +122,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
     let fonts_byte = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
     let font12px = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte)?, 12)?;
 
-    let text_color = Color::RGBA(23, 96, 118, 255);
-    let background_color = Color::RGB(217, 219, 241);
+    let text_color = Color::RGBA(223, 146, 142, 255);
+    let background_color = Color::RGB(29, 32, 31);
 
     let TextureQuery { width, height, .. } = texture_logo.query();
 
@@ -140,6 +138,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         (sdl2::keyboard::Keycode::I, 59),
         (sdl2::keyboard::Keycode::O, 60),
         (sdl2::keyboard::Keycode::P, 61),
+        (sdl2::keyboard::Keycode::Q, 62),
+        (sdl2::keyboard::Keycode::S, 63),
     ]);
 
     'running: loop {
@@ -204,7 +204,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
         data_ui.process_messages();
 
-        canvas.set_draw_color(Color::RGB(217, 219, 241));
+        canvas.set_draw_color(background_color);
         canvas.clear();
         
         canvas.copy(&texture_logo, None, Some(Rect::new(SCREEN_WIDTH as i32/2, SCREEN_HEIGHT  as i32 / 2 - (height as i32/3) / 2, width/3, height/3)))?;
@@ -270,7 +270,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
         }
 
         let mut i : i32 = 0;
-        let mut y = 100;
+        let mut y = 90;
         let height_rect = 30;
         for insrument in data_ui.insruments.iter() {
 
@@ -304,13 +304,13 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
             if data_ui.instrument_selected_id as i32 == i {
                 canvas.fill_rect(Rect::new(20, y, 100, height_rect))?;
-                canvas.set_draw_color(Color::RGB(217, 219, 241));
+                canvas.set_draw_color(background_color);
             } else {
                 canvas.draw_rect(Rect::new(20, y, 100, height_rect))?;
             }
 
-            canvas.copy(&texture_intrument_name, None, Some(Rect::new(20, y, width, height)))?;
-            canvas.copy(&texture_intrument_preset, None, Some(Rect::new(20, y + height as i32, width_preset, height_preset)))?;
+            canvas.copy(&texture_intrument_name, None, Some(Rect::new(25, y, width, height)))?;
+            canvas.copy(&texture_intrument_preset, None, Some(Rect::new(25, y + height as i32, width_preset, height_preset)))?;
 
             i += 1;
             y += height_rect as i32 + 5

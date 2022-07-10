@@ -17,21 +17,77 @@
             "root_midi_note": 53,
             "note_midi_min": 53,
             "note_midi_max": 53,
-            "filepath": "./data/sampler-presets/Daz-Funk/kick.wav",
+            "filepath": "./data/sampler-presets/Daz-Funk/hihat2.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 54,
             "note_midi_min": 54,
             "note_midi_max": 54,
-            "filepath": "./data/sampler-presets/Daz-Funk/openhat.wav",
+            "filepath": "./data/sampler-presets/Daz-Funk/hihat3.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 55,
             "note_midi_min": 55,
             "note_midi_max": 55,
+            "filepath": "./data/sampler-presets/Daz-Funk/kick.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 56,
+            "note_midi_min": 56,
+            "note_midi_max": 56,
+            "filepath": "./data/sampler-presets/Daz-Funk/kick2.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 57,
+            "note_midi_min": 57,
+            "note_midi_max": 57,
+            "filepath": "./data/sampler-presets/Daz-Funk/kick3.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 58,
+            "note_midi_min": 58,
+            "note_midi_max": 58,
+            "filepath": "./data/sampler-presets/Daz-Funk/openhat.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 59,
+            "note_midi_min": 59,
+            "note_midi_max": 59,
+            "filepath": "./data/sampler-presets/Daz-Funk/openhat2.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 60,
+            "note_midi_min": 60,
+            "note_midi_max": 60,
             "filepath": "./data/sampler-presets/Daz-Funk/snare.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 61,
+            "note_midi_min": 61,
+            "note_midi_max": 61,
+            "filepath": "./data/sampler-presets/Daz-Funk/snare2.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 62,
+            "note_midi_min": 62,
+            "note_midi_max": 62,
+            "filepath": "./data/sampler-presets/Daz-Funk/snare3.wav",
+            "is_one_shot": true
+        },
+        {
+            "root_midi_note": 63,
+            "note_midi_min": 63,
+            "note_midi_max": 63,
+            "filepath": "./data/sampler-presets/Daz-Funk/clap.wav",
             "is_one_shot": true
         }
     ]
