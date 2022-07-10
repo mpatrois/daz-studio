@@ -169,7 +169,9 @@ impl Sequencer {
             i += 1;
         }
 
-        self.update();
+        if self.data.is_playing {
+            self.update();
+        }
 
         for s in 0..(nb_channels * num_samples) {
              outputs[s] = 0.0;

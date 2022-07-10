@@ -1,7 +1,6 @@
 use crate::processor::Processor;
 use crate::midimessage::MidiMessage;
 use crate::synthesizer::synthesizervoice::SynthesizerVoice;
-use crate::sampler::sample::Sample;
 
 use crate::synthesizer::operator::SINE;
 use crate::synthesizer::operator::SAW_ANALOGIC_4;

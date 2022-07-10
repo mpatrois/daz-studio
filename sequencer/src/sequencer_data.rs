@@ -9,6 +9,7 @@ pub enum Message {
     SetMetronomeActive(bool),
     NextInstrument,
     PreviousInstrument,
+    PlayStop,
     NextPreset,
     PreviousPreset,
     SetIsRecording(bool),
@@ -39,6 +40,7 @@ pub struct InstrumentData {
 pub struct SequencerData {
     pub tempo: f32,
     pub tick: i32,
+    pub is_playing: bool,
     pub tick_time: f32,
     pub volume: f32,
     pub metronome_active: bool,
@@ -56,8 +58,9 @@ impl SequencerData {
         let mut data = SequencerData {
             tick: 0,
             tempo: 90.0,
+            is_playing: false,
             volume: 0.6,
-            metronome_active: false,
+            metronome_active: true,
             is_recording: false,
             ticks_per_quarter_note: 960,
             instrument_selected_id: 0,
@@ -72,6 +75,10 @@ impl SequencerData {
     pub fn process_messages(&mut self) {
         for msg in self.receiver.try_iter() {
             match msg {
+                Message::PlayStop => {
+                    self.is_playing = !self.is_playing;
+                    self.tick = 0;
+                },
                 Message::SetTempo(x) => {
                     self.tempo = x;
                     self.tick_time = (60.0 / self.tempo) / self.ticks_per_quarter_note as f32;

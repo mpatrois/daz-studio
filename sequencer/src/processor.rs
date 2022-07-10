@@ -1,5 +1,4 @@
 use crate::midimessage::MidiMessage;
-use crate::sampler::sample::Sample;
 use crate::preset::Preset;
 
 pub trait Processor {

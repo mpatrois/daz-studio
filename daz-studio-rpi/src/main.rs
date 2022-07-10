@@ -173,6 +173,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
 
                     match keycode {
                         Keycode::Escape => break 'running,
+                        Keycode::Space => broadcaster.send(Message::PlayStop),
                         Keycode::Up => broadcaster.send(Message::PreviousInstrument),
                         Keycode::Down => broadcaster.send(Message::NextInstrument),
                         Keycode::Left => broadcaster.send(Message::PreviousPreset),
@@ -251,6 +252,21 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: Sequenc
     
             let TextureQuery { width: width_tempo, height: height_tempo, .. } = texture.query();
             canvas.copy(&texture, None, Some(Rect::new(20, 40, width_tempo, height_tempo)))?;
+        }
+
+        // Playing
+        {
+            let surface = font12px
+                .render(&["Playing :", &data_ui.is_playing.to_string()].join(" "))
+                .blended(text_color)
+                .map_err(|e| e.to_string())?;
+        
+            let texture = texture_creator
+                .create_texture_from_surface(&surface)
+                .map_err(|e| e.to_string())?;
+    
+            let TextureQuery { width, height, .. } = texture.query();
+            canvas.copy(&texture, None, Some(Rect::new(20, 55, width, height)))?;
         }
 
         let mut i : i32 = 0;
