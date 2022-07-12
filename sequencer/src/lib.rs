@@ -19,6 +19,7 @@ use crate::midimessage::MidiMessage;
 use crate::fifoqueue::FifoQueue;
 use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
+use crate::sequencer_data::Message as SequencerDataMessage;
 use crate::midimessage::NOTE_ON;
 use crate::midimessage::NOTE_OFF;
 use std::sync::mpsc::Sender;
@@ -30,14 +31,13 @@ pub enum Message {
 pub struct Sequencer {
     pub data: SequencerData,
     sample_rate: f32,
-    bars: i32,
     time_accumulated: f32,
     elapsed_time_each_render: f32,
     metronome: Metronome,
     buffer_size: usize,
     processors: Vec<Box<dyn Processor>>,
     fifo_queue_midi_message: FifoQueue<MidiMessage>,
-    bpm_has_biped: bool,
+    pub audio_state_senders: Vec<Sender<sequencer_data::Message>>
 }
 
 impl Sequencer {
@@ -54,10 +54,9 @@ impl Sequencer {
             metronome: metronome,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            bars: 2,
             fifo_queue_midi_message: FifoQueue::new(64),
-            bpm_has_biped: false,
             data,
+            audio_state_senders: Vec::new(),
         };
 
         sequencer.compute_elapsed_time_each_render();
@@ -78,19 +77,6 @@ impl Sequencer {
             });
         }
         return (sequencer, sender);
-    }
-
-    pub fn set_bars(&mut self, bars: i32) {
-        self.data.tick = 0;
-        self.bars = bars;
-    }
-
-    pub fn set_is_recording(&mut self, is_recording: bool) {
-        self.data.is_recording = is_recording;
-    }
-    
-    pub fn set_volume(&mut self, volume: f32) {
-        self.data.volume = volume;
     }
 
     pub fn compute_elapsed_time_each_render(&mut self) {
@@ -140,20 +126,20 @@ impl Sequencer {
     }
 
     pub fn update(&mut self) {
-        self.bpm_has_biped = false;
+        self.data.bpm_has_biped = false;
         self.time_accumulated += self.elapsed_time_each_render;
         while self.time_accumulated >= self.data.tick_time {
             self.time_accumulated -= self.data.tick_time;
           
-            if !self.bpm_has_biped {
-                self.bpm_has_biped = self.metronomome_tick();
+            if !self.data.bpm_has_biped {
+                self.data.bpm_has_biped = self.metronomome_tick();
             }
 
             self.play_recorded_note_events();
 
             self.data.tick += 1;
 
-            if self.data.tick >= self.bars * self.data.ticks_per_quarter_note * 4 {
+            if self.data.tick >= self.data.bars * self.data.ticks_per_quarter_note * 4 {
                 self.data.tick = 0;
             }
         }
@@ -170,7 +156,14 @@ impl Sequencer {
         }
 
         if self.data.is_playing {
+            let bpm_has_bipped = self.data.bpm_has_biped;
             self.update();
+            for sender in self.audio_state_senders.iter() {
+                sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
+                if !bpm_has_bipped && self.data.bpm_has_biped {
+                    sender.send(SequencerDataMessage::SetBpmHasBiped(self.data.bpm_has_biped)).unwrap();
+                }
+            }
         }
 
         for s in 0..(nb_channels * num_samples) {

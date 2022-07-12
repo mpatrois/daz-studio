@@ -42,6 +42,8 @@ fn main() {
 
     // Just for testing purpose, need to synchronise this after
     data_ui.insruments = sequencer.data.insruments.clone();
+    
+    sequencer.audio_state_senders.push(ui_sender.clone());
 
     let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 
@@ -121,77 +123,75 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
         (Keycode::S, 63),
     ]);
 
+    let mut main_ui = ui::MainUI  {
+        metronome_left: true
+    };
+
     'main_loop: loop {
         
         data_ui.process_messages();
 
-        ui::update(&data_ui, &mut display)?;
+        main_ui.update(data_ui, &mut display)?;
         window.update(&display);
 
-        'event_loop: loop {
-            for event in window.events() {
-                match event {
-                    SimulatorEvent::Quit => break 'main_loop,
-                    SimulatorEvent::KeyDown {
-                        keycode,
-                        repeat: false,
-                        ..
-                    } => {
-                        if keycode == Keycode::Escape {
-                            break 'main_loop;
-                        }
-    
-                        let note = key_board_notes.get(&keycode); 
-                        if note.is_some() {
+        for event in window.events() {
+            match event {
+                SimulatorEvent::Quit => break 'main_loop,
+                SimulatorEvent::KeyDown {
+                    keycode,
+                    repeat: false,
+                    ..
+                } => {
+                    if keycode == Keycode::Escape {
+                        break 'main_loop;
+                    }
+
+                    let note = key_board_notes.get(&keycode); 
+                    if note.is_some() {
+                        midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
+                            first: 0x9c,
+                            second: *note.unwrap(),
+                            third: 127,
+                            tick: 0
+                        })).unwrap();
+                    }
+                },
+                SimulatorEvent::KeyUp {
+                    keycode,
+                    repeat: false,
+                    ..
+                } => {
+                    match keycode {
+                        Keycode::Escape => break 'main_loop,
+                        Keycode::Space => broadcaster.send(Message::PlayStop),
+                        Keycode::Up => broadcaster.send(Message::PreviousInstrument),
+                        Keycode::Down => broadcaster.send(Message::NextInstrument),
+                        Keycode::Left => broadcaster.send(Message::PreviousPreset),
+                        Keycode::Right => broadcaster.send(Message::NextPreset),
+                        Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
+                        Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
+                        Keycode::C => {
+                            let new_tempo = data_ui.tempo - 1.0;
+                            broadcaster.send(Message::SetTempo(new_tempo));
+                        },
+                        Keycode::V => {
+                            let new_tempo = data_ui.tempo + 1.0;
+                            broadcaster.send(Message::SetTempo(new_tempo));
+                        },
+                        _ => if let Some(note) = key_board_notes.get(&keycode) {
                             midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
-                                first: 0x9c,
-                                second: *note.unwrap(),
+                                first: 0x8c,
+                                second: *note,
                                 third: 127,
                                 tick: 0
                             })).unwrap();
                         }
-                        break 'event_loop;
-                    },
-                    SimulatorEvent::KeyUp {
-                        keycode,
-                        repeat: false,
-                        ..
-                    } => {
-                        match keycode {
-                            Keycode::Escape => break 'main_loop,
-                            Keycode::Space => broadcaster.send(Message::PlayStop),
-                            Keycode::Up => broadcaster.send(Message::PreviousInstrument),
-                            Keycode::Down => broadcaster.send(Message::NextInstrument),
-                            Keycode::Left => broadcaster.send(Message::PreviousPreset),
-                            Keycode::Right => broadcaster.send(Message::NextPreset),
-                            Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
-                            Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
-                            Keycode::C => {
-                                let new_tempo = data_ui.tempo - 1.0;
-                                broadcaster.send(Message::SetTempo(new_tempo));
-                            },
-                            Keycode::V => {
-                                let new_tempo = data_ui.tempo + 1.0;
-                                broadcaster.send(Message::SetTempo(new_tempo));
-                            },
-                            _ => if let Some(note) = key_board_notes.get(&keycode) {
-                                midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
-                                    first: 0x8c,
-                                    second: *note,
-                                    third: 127,
-                                    tick: 0
-                                })).unwrap();
-                            }
-                        }
-
-                        break 'event_loop;
                     }
-                    _ => {},
-                }   
+                }
+                _ => {},
             }
-            thread::sleep(Duration::from_millis(20));
+            thread::sleep(Duration::from_millis(30));
         }
     }
-
     Ok(())
 }
