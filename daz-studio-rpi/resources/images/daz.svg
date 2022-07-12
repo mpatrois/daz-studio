@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="73mm"
+   height="73mm"
+   viewBox="0 0 73 73"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="dessin.svg"
+   inkscape:version="1.1.2 (b8e25be8, 2022-02-05)"
+   inkscape:export-filename="/Users/emmanuel/Desktop/search/daz-studio/daz-studio-rpi/resources/images/daz.png"
+   inkscape:export-xdpi="125.95616"
+   inkscape:export-ydpi="125.95616"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     showguides="true"
+     inkscape:zoom="1.550789"
+     inkscape:cx="134.77011"
+     inkscape:cy="173.13767"
+     inkscape:window-width="1411"
+     inkscape:window-height="847"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g2371"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:snap-global="true" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-110.07165,-30.766145)">
+    <g
+       id="g2371">
+      <g
+         id="g10657"
+         style="fill:#00ffff">
+        <g
+           id="g10630"
+           style="fill:#00ffff">
+          <g
+             id="g10518"
+             style="fill:#00ffff">
+            <text
+               xml:space="preserve"
+               style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.5833px;line-height:1.25;font-family:'DIN Alternate';-inkscape-font-specification:'DIN Alternate';fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:0.264583"
+               x="113.97366"
+               y="100.90379"
+               id="text3477"><tspan
+                 sodipodi:role="line"
+                 id="tspan3475"
+                 style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Futura;-inkscape-font-specification:Futura;fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:0.264583"
+                 x="113.97366"
+                 y="100.90379">DAZ STUDIO</tspan></text>
+            <path
+               id="path1245"
+               style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:0.949304px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+               d="M 184.89844,45.664062 47.167969,264.32031 l 275.021481,0.4043 -10.47078,-14.34619 c -78.64788,-0.2854 -156.23028,-1.4468 -234.460858,-1.56201 L 184.84961,78.005859 284.59766,237.16211 h 20.31836 z"
+               transform="matrix(0.26458333,0,0,0.26458333,97.591793,18.684195)"
+               sodipodi:nodetypes="ccccccccc" />
+          </g>
+          <path
+             id="path2222"
+             style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:0.246118"
+             d="m 146.45262,60.675589 c -7.03874,0.0032 -13.43282,3.547778 -16.37833,9.079409 2.94551,5.531631 9.33959,9.07622 16.37833,9.07941 7.04239,-0.0033 13.43906,-3.551511 16.38246,-9.087457 -2.94886,-5.529664 -9.34438,-9.071017 -16.38246,-9.071362 z m 0.001,3.060305 c 4.66573,2.29e-4 11.05554,2.25496 13.01041,5.920714 -1.95123,3.669947 -8.34181,6.115264 -13.01041,6.117497 -4.66623,-0.0021 -11.10905,-2.35199 -13.06172,-6.019107 1.95267,-3.667117 8.39549,-6.016965 13.06172,-6.019104 z"
+             sodipodi:nodetypes="cccccccccc" />
+        </g>
+        <circle
+           style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:0.213677"
+           id="path2528"
+           cx="146.45477"
+           cy="67.036003"
+           r="5.1241894" />
+      </g>
+    </g>
+  </g>
+</svg>

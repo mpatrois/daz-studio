@@ -3,13 +3,17 @@ name = "daz-studio-rpi"
 version = "0.1.0"
 edition = "2018"
 
-[dependencies.sdl2]
-version = "^0.35.2"
-default-features = false
-features = ["ttf", "image"]
 
 [dependencies]
 midir = "0.8.0"
 portaudio = { git = "https://github.com/RustAudio/rust-portaudio.git", branch = "master" }
 biquad = "0.4.2"
 sequencer = { path = "../sequencer" }
+
+embedded-graphics = "0.7.0"
+embedded-graphics-simulator = "0.3.0"
+embedded-text = "0.5.0"
+tinybmp = "0.3.1"
+tinytga = "0.4.1"
+sdl2 = "0.32.2"
+
