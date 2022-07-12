@@ -1,10 +1,10 @@
 use midir::{MidiInput, Ignore};
 
-const SCREEN_WIDTH: u32 = 320;
-const SCREEN_HEIGHT: u32 = 240;
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 48_000.0;
 const FRAMES_PER_BUFFER: u32 = 512;
+
+mod ui;
 
 use sequencer;
 use sequencer::midimessage::MidiMessage;
@@ -15,13 +15,17 @@ use std::sync::mpsc;
 use std::sync::mpsc::{Sender};
 use std::collections::HashMap;
 
-use sdl2::rect::Rect;
-use sdl2::event::Event;
-use sdl2::image::{LoadTexture};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use std::time::Duration;
-use sdl2::render::TextureQuery;
+
+use core::convert::Infallible;
+use embedded_graphics::{
+    pixelcolor::Rgb888,
+    prelude::*,
+};
+use embedded_graphics_simulator::{
+    OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
+};
+use std::{thread, time::Duration};
 
 fn main() {
     
@@ -93,231 +97,100 @@ fn main() {
             ui_sender,
         ]
     };
-    launch_ui(midi_event_sender, data_ui, broadcast).unwrap();
+    launch_ui(midi_event_sender, &mut data_ui, broadcast).unwrap();
 }
 
-fn launch_ui(midi_event_sender: Sender<sequencer::Message>, mut data_ui: SequencerData, broadcaster: DataBroadcaster) -> Result<(), String> {
-    
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-    let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
+fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut SequencerData, broadcaster: DataBroadcaster) -> Result<(), Infallible> {
+    let output_settings = OutputSettingsBuilder::new().scale(1).build();
+    let mut window = Window::new("Daz Studio Emulator", &output_settings);
 
-    let window = video_subsystem
-        .window("Daz Studio", SCREEN_WIDTH, SCREEN_HEIGHT)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
-    let mut event_pump = sdl_context.event_pump()?;
-
-    let texture_creator = canvas.texture_creator();
-
-    let logo_bytes = include_bytes!("../resources/images/daz.png");
-    let texture_logo = texture_creator.load_texture_bytes(logo_bytes)?;
-
-    // Load a font
-    let fonts_byte = include_bytes!("../resources/fonts/Roboto-Regular.ttf");
-    let font12px = ttf_context.load_font_from_rwops(sdl2::rwops::RWops::from_bytes(fonts_byte)?, 12)?;
-
-    let text_color = Color::RGBA(223, 146, 142, 255);
-    let background_color = Color::RGB(29, 32, 31);
-
-    let TextureQuery { width, height, .. } = texture_logo.query();
+    let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
 
     let key_board_notes = HashMap::from([
-        (sdl2::keyboard::Keycode::A, 52),
-        (sdl2::keyboard::Keycode::Z, 53),
-        (sdl2::keyboard::Keycode::E, 54),
-        (sdl2::keyboard::Keycode::R, 55),
-        (sdl2::keyboard::Keycode::T, 56),
-        (sdl2::keyboard::Keycode::Y, 57),
-        (sdl2::keyboard::Keycode::U, 58),
-        (sdl2::keyboard::Keycode::I, 59),
-        (sdl2::keyboard::Keycode::O, 60),
-        (sdl2::keyboard::Keycode::P, 61),
-        (sdl2::keyboard::Keycode::Q, 62),
-        (sdl2::keyboard::Keycode::S, 63),
+        (Keycode::A, 52),
+        (Keycode::Z, 53),
+        (Keycode::E, 54),
+        (Keycode::R, 55),
+        (Keycode::T, 56),
+        (Keycode::Y, 57),
+        (Keycode::U, 58),
+        (Keycode::I, 59),
+        (Keycode::O, 60),
+        (Keycode::P, 61),
+        (Keycode::Q, 62),
+        (Keycode::S, 63),
     ]);
 
-    'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. } => break 'running,
-                Event::KeyDown {
-                    keycode: Some(keycode),
-                    repeat: false,
-                    ..
-                } => {
-                    if keycode == Keycode::Escape {
-                        break 'running;
-                    }
+    'main_loop: loop {
+        
+        data_ui.process_messages();
 
-                    let note = key_board_notes.get(&keycode); 
-                    if note.is_some() {
-                        midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
-                            first: 0x9c,
-                            second: *note.unwrap(),
-                            third: 127,
-                            tick: 0
-                        })).unwrap();
-                    }
-                },
-                Event::KeyUp {
-                    keycode: Some(keycode),
-                    repeat: false,
-                    ..
-                } => {
+        ui::update(&data_ui, &mut display)?;
+        window.update(&display);
 
-                    match keycode {
-                        Keycode::Escape => break 'running,
-                        Keycode::Space => broadcaster.send(Message::PlayStop),
-                        Keycode::Up => broadcaster.send(Message::PreviousInstrument),
-                        Keycode::Down => broadcaster.send(Message::NextInstrument),
-                        Keycode::Left => broadcaster.send(Message::PreviousPreset),
-                        Keycode::Right => broadcaster.send(Message::NextPreset),
-                        Keycode::V => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
-                        Keycode::C => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
-                        Keycode::B => {
-                            let new_tempo = data_ui.tempo - 1.0;
-                            broadcaster.send(Message::SetTempo(new_tempo));
-                        },
-                        Keycode::N => {
-                            let new_tempo = data_ui.tempo + 1.0;
-                            broadcaster.send(Message::SetTempo(new_tempo));
-                        },
-                        _ => if let Some(note) = key_board_notes.get(&keycode) {
+        'event_loop: loop {
+            for event in window.events() {
+                match event {
+                    SimulatorEvent::Quit => break 'main_loop,
+                    SimulatorEvent::KeyDown {
+                        keycode,
+                        repeat: false,
+                        ..
+                    } => {
+                        if keycode == Keycode::Escape {
+                            break 'main_loop;
+                        }
+    
+                        let note = key_board_notes.get(&keycode); 
+                        if note.is_some() {
                             midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
-                                first: 0x8c,
-                                second: *note,
+                                first: 0x9c,
+                                second: *note.unwrap(),
                                 third: 127,
                                 tick: 0
                             })).unwrap();
                         }
+                        break 'event_loop;
+                    },
+                    SimulatorEvent::KeyUp {
+                        keycode,
+                        repeat: false,
+                        ..
+                    } => {
+                        match keycode {
+                            Keycode::Escape => break 'main_loop,
+                            Keycode::Space => broadcaster.send(Message::PlayStop),
+                            Keycode::Up => broadcaster.send(Message::PreviousInstrument),
+                            Keycode::Down => broadcaster.send(Message::NextInstrument),
+                            Keycode::Left => broadcaster.send(Message::PreviousPreset),
+                            Keycode::Right => broadcaster.send(Message::NextPreset),
+                            Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
+                            Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
+                            Keycode::C => {
+                                let new_tempo = data_ui.tempo - 1.0;
+                                broadcaster.send(Message::SetTempo(new_tempo));
+                            },
+                            Keycode::V => {
+                                let new_tempo = data_ui.tempo + 1.0;
+                                broadcaster.send(Message::SetTempo(new_tempo));
+                            },
+                            _ => if let Some(note) = key_board_notes.get(&keycode) {
+                                midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
+                                    first: 0x8c,
+                                    second: *note,
+                                    third: 127,
+                                    tick: 0
+                                })).unwrap();
+                            }
+                        }
+
+                        break 'event_loop;
                     }
-                }
-                _ => {},
-            }   
-        }
-
-        data_ui.process_messages();
-
-        canvas.set_draw_color(background_color);
-        canvas.clear();
-        
-        canvas.copy(&texture_logo, None, Some(Rect::new(SCREEN_WIDTH as i32/2, SCREEN_HEIGHT  as i32 / 2 - (height as i32/3) / 2, width/3, height/3)))?;
-        
-        // Tempo
-        {
-            let surface = font12px
-                .render(&["BPM :", &data_ui.tempo.to_string()].join(" "))
-                .blended(text_color)
-                .map_err(|e| e.to_string())?;
-        
-            let texture = texture_creator
-                .create_texture_from_surface(&surface)
-                .map_err(|e| e.to_string())?;
-    
-            let TextureQuery { width: width_tempo, height: height_tempo, .. } = texture.query();
-            canvas.copy(&texture, None, Some(Rect::new(20, 10, width_tempo, height_tempo)))?;
-        }
-
-        // Metronome
-        {
-            let surface = font12px
-                .render(&["Metronome :", &data_ui.metronome_active.to_string()].join(" "))
-                .blended(text_color)
-                .map_err(|e| e.to_string())?;
-        
-            let texture = texture_creator
-                .create_texture_from_surface(&surface)
-                .map_err(|e| e.to_string())?;
-    
-            let TextureQuery { width: width_tempo, height: height_tempo, .. } = texture.query();
-            canvas.copy(&texture, None, Some(Rect::new(20, 25, width_tempo, height_tempo)))?;
-        }
-        
-        // Recording
-        {
-            let surface = font12px
-                .render(&["Recording :", &data_ui.is_recording.to_string()].join(" "))
-                .blended(text_color)
-                .map_err(|e| e.to_string())?;
-        
-            let texture = texture_creator
-                .create_texture_from_surface(&surface)
-                .map_err(|e| e.to_string())?;
-    
-            let TextureQuery { width: width_tempo, height: height_tempo, .. } = texture.query();
-            canvas.copy(&texture, None, Some(Rect::new(20, 40, width_tempo, height_tempo)))?;
-        }
-
-        // Playing
-        {
-            let surface = font12px
-                .render(&["Playing :", &data_ui.is_playing.to_string()].join(" "))
-                .blended(text_color)
-                .map_err(|e| e.to_string())?;
-        
-            let texture = texture_creator
-                .create_texture_from_surface(&surface)
-                .map_err(|e| e.to_string())?;
-    
-            let TextureQuery { width, height, .. } = texture.query();
-            canvas.copy(&texture, None, Some(Rect::new(20, 55, width, height)))?;
-        }
-
-        let mut i : i32 = 0;
-        let mut y = 90;
-        let height_rect = 30;
-        for insrument in data_ui.insruments.iter() {
-
-            let mut color_name = text_color;
-            if data_ui.instrument_selected_id == i as usize {
-                color_name = background_color;
+                    _ => {},
+                }   
             }
-
-            let surface_intrument_name = font12px
-                .render(&insrument.name)
-                .blended(color_name)
-                .map_err(|e| e.to_string())?;
-    
-            let texture_intrument_name = texture_creator
-                .create_texture_from_surface(&surface_intrument_name)
-                .map_err(|e| e.to_string())?;
-            
-            let surface_intrument_preset = font12px
-                .render(&insrument.presets[insrument.current_preset_id])
-                .blended(color_name)
-                .map_err(|e| e.to_string())?;
-    
-            let texture_intrument_preset = texture_creator
-                .create_texture_from_surface(&surface_intrument_preset)
-                .map_err(|e| e.to_string())?;
-
-            let TextureQuery { width, height, .. } = texture_intrument_name.query();
-            let TextureQuery { width: width_preset, height: height_preset, .. } = texture_intrument_preset.query();
-            
-            canvas.set_draw_color(text_color);
-
-            if data_ui.instrument_selected_id as i32 == i {
-                canvas.fill_rect(Rect::new(20, y, 100, height_rect))?;
-                canvas.set_draw_color(background_color);
-            } else {
-                canvas.draw_rect(Rect::new(20, y, 100, height_rect))?;
-            }
-
-            canvas.copy(&texture_intrument_name, None, Some(Rect::new(25, y, width, height)))?;
-            canvas.copy(&texture_intrument_preset, None, Some(Rect::new(25, y + height as i32, width_preset, height_preset)))?;
-
-            i += 1;
-            y += height_rect as i32 + 5
+            thread::sleep(Duration::from_millis(20));
         }
-        
-        canvas.present();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 30));
     }
 
     Ok(())
