@@ -5,8 +5,10 @@ use std::sync::mpsc::Receiver;
 #[derive(Copy, Clone)]
 pub enum Message {
     SetTempo(f32),
+    SetTick(i32),
     SetVolume(f32),
     SetMetronomeActive(bool),
+    SetBpmHasBiped(bool),
     NextInstrument,
     PreviousInstrument,
     PlayStop,
@@ -40,6 +42,8 @@ pub struct InstrumentData {
 pub struct SequencerData {
     pub tempo: f32,
     pub tick: i32,
+    pub bpm_has_biped: bool,
+    pub bars: i32,
     pub is_playing: bool,
     pub tick_time: f32,
     pub volume: f32,
@@ -48,7 +52,7 @@ pub struct SequencerData {
     pub is_recording: bool,
     pub instrument_selected_id: usize,
     pub insruments: Vec<InstrumentData>,
-    pub receiver: Receiver<Message>,
+    pub receiver: Receiver<Message>
 }
 
 impl SequencerData {
@@ -58,7 +62,9 @@ impl SequencerData {
         let mut data = SequencerData {
             tick: 0,
             tempo: 90.0,
+            bars: 2,
             is_playing: false,
+            bpm_has_biped: false,
             volume: 0.6,
             metronome_active: true,
             is_recording: false,
@@ -86,8 +92,14 @@ impl SequencerData {
                 Message::SetMetronomeActive(x) => {
                     self.metronome_active = x;
                 },
+                Message::SetTick(x) => {
+                    self.tick = x;
+                },
                 Message::SetIsRecording(x) => {
                     self.is_recording = x;
+                },
+                Message::SetBpmHasBiped(x) => {
+                    self.bpm_has_biped = x;
                 },
                 Message::NextInstrument => {
                     self.instrument_selected_id += 1;
