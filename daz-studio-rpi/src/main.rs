@@ -42,6 +42,8 @@ fn main() {
 
     // Just for testing purpose, need to synchronise this after
     data_ui.insruments = sequencer.data.insruments.clone();
+    
+    sequencer.audio_state_senders.push(ui_sender.clone());
 
     let callback = move |portaudio::OutputStreamCallbackArgs { buffer, frames, .. }| {
 
@@ -128,7 +130,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
         ui::update(&data_ui, &mut display)?;
         window.update(&display);
 
-        'event_loop: loop {
+        // 'event_loop: loop {
             for event in window.events() {
                 match event {
                     SimulatorEvent::Quit => break 'main_loop,
@@ -150,7 +152,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                                 tick: 0
                             })).unwrap();
                         }
-                        break 'event_loop;
+                        // break 'event_loop;
                     },
                     SimulatorEvent::KeyUp {
                         keycode,
@@ -184,14 +186,13 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                             }
                         }
 
-                        break 'event_loop;
+                        // break 'event_loop;
                     }
                     _ => {},
-                }   
+                // }   
             }
             thread::sleep(Duration::from_millis(20));
         }
     }
-
     Ok(())
 }

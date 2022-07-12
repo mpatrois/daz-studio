@@ -4,6 +4,7 @@ use crate::synthesizer::synthesizervoice::SynthesizerVoice;
 
 use crate::synthesizer::operator::SINE;
 use crate::synthesizer::operator::SAW_ANALOGIC_4;
+use crate::synthesizer::operator::SAW_ANALOGIC_64;
 use crate::synthesizer::operator::SAW_DIGITAL;
 use crate::synthesizer::operator::OSC_OFF;
 use crate::synthesizer::synthesizer_preset::SynthesizerPreset;
@@ -78,7 +79,7 @@ impl Synthesizer {
             
             oscx_coarse: [0.5, 0.5, 1.0, 0.5],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-100.0), db_to_gain(0.0)],
-            oscx_osc_type: [OSC_OFF, OSC_OFF, OSC_OFF, SAW_DIGITAL],
+            oscx_osc_type: [OSC_OFF, OSC_OFF, OSC_OFF, SAW_ANALOGIC_64],
             oscx_phase_offset: [0.0, 0.7, 0., 0.],
             oscx_feedback: [0.4, 0., 0., 0.],
             oscx_adsr_attack: [0.0128, 0.00092, 0.00423, 0.00243],

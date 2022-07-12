@@ -179,7 +179,20 @@ pub fn update(
             Text::new(&insrument.presets[insrument.current_preset_id], Point::new(x, y + (10 + 2) * 2), text_style).draw(display)?;
 
             i += 1;
-            y += height_rect as i32 + margin_top_instrument
+            y += height_rect as i32 + margin_top_instrument;
+
+
+            let tick_width : f32 = rectangle_instrument_notes.size.width as f32 / (data_ui.bars as f32 * 4. * data_ui.ticks_per_quarter_note as f32);
+            let tick_x =  (tick_width * data_ui.tick as f32) as i32;
+            
+            let play_head = Line::new(
+                Point::new(rectangle_instrument_notes.top_left.x + tick_x, rectangle_instrument_notes.top_left.y),
+                Point::new(rectangle_instrument_notes.top_left.x + tick_x, rectangle_instrument_notes.bottom_right().unwrap().y)
+            );
+            play_head
+                .into_styled(PrimitiveStyle::with_stroke(metronome_color, 1))
+                .draw(display)?;
+
         }
     }
 
