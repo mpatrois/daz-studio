@@ -9,3 +9,11 @@ pub struct MidiMessage {
     pub tick: i32,
     pub record_session: i32
 }
+
+#[derive(Copy, Clone)]
+pub struct NoteEvent {
+    pub note_id: u8,
+    pub tick_on: i32,
+    pub tick_off: i32,
+    pub record_session: i32,
+}

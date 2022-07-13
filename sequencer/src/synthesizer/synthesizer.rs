@@ -1,3 +1,4 @@
+use crate::midimessage::NoteEvent;
 use crate::processor::Processor;
 use crate::midimessage::MidiMessage;
 use crate::synthesizer::synthesizervoice::SynthesizerVoice;
@@ -21,7 +22,7 @@ pub struct Synthesizer {
     voices: Vec<SynthesizerVoice>,
     nb_actives_notes: usize,
     pub id: usize,
-    pub note_events: Vec<MidiMessage>,
+    pub note_events: Vec<NoteEvent>,
     im_armed: bool,
     sample_rate: f32,
     presets: Vec<SynthesizerPreset>,
@@ -185,11 +186,11 @@ impl Processor for Synthesizer {
         self.note_events.clear();
     }
 
-    fn get_notes_events(&mut self) -> &Vec<MidiMessage> {
-        return &self.note_events;
+    fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
+        return &mut self.note_events;
     }
 
-    fn add_notes_event(&mut self, midi_message: MidiMessage) {
+    fn add_notes_event(&mut self, midi_message: NoteEvent) {
         self.note_events.push(midi_message);
     }
 

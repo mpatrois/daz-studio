@@ -1,5 +1,5 @@
 
-use sequencer::sequencer_data::{SequencerData, PairedNotes};
+use sequencer::{sequencer_data::{SequencerData, PairedNotes}, midimessage::NoteEvent};
 
 use core::convert::Infallible;
 use embedded_graphics::{
@@ -223,7 +223,12 @@ impl MainUI {
                     .into_styled(PrimitiveStyle::with_stroke(play_head_color, 1))
                     .draw(display)?;
 
-                self.draw_notes(display, &insrument.paired_notes, rectangle_instrument_notes, data_ui.bars * 4 * data_ui.ticks_per_quarter_note)?;
+                self.draw_notes(
+                    display, 
+                    &insrument.paired_notes, 
+                    rectangle_instrument_notes, 
+                    data_ui
+                )?;
     
             }
         }
@@ -231,8 +236,9 @@ impl MainUI {
         Ok(())
     }
 
-    fn draw_notes(&mut self, display: &mut SimulatorDisplay<Rgb888>, note_events: &Vec<PairedNotes>, box_draw: Rectangle, nb_ticks: i32) -> Result<(), Infallible> {
-    
+    fn draw_notes(&mut self, display: &mut SimulatorDisplay<Rgb888>, note_events: &Vec<NoteEvent>, box_draw: Rectangle, data_ui: & SequencerData) -> Result<(), Infallible> {
+        
+        let nb_ticks = data_ui.bars * 4 * data_ui.ticks_per_quarter_note;
         let mut maxNote = 0;
         let mut minNote = 108;
 
@@ -253,7 +259,14 @@ impl MainUI {
     
         for note_event in note_events.iter() {
             let note_index = (maxNote - note_event.note_id) as i32;
-            let tick_duration = note_event.tick_off + 1 - note_event.tick_on;
+
+            let mut tick_duration = 0;
+            if note_event.tick_off == -1 {
+                tick_duration = data_ui.tick - note_event.tick_on;
+            } else {
+                tick_duration = note_event.tick_off + 1 - note_event.tick_on;
+            } 
+            
             let x_note = box_draw.top_left.x + (note_event.tick_on as f32 * size_tick) as i32;
             let h = box_draw.size.height / ((maxNote as u32 + 2) - minNote as u32);
             let y_note = box_draw.top_left.y + note_index as i32 * h as i32 + box_draw.size.height as i32 / 2 - ((maxNote as i32 - minNote as i32) * h as i32) / 2;
