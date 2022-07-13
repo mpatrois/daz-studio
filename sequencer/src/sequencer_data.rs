@@ -41,6 +41,7 @@ pub struct InstrumentData {
 
 pub struct SequencerData {
     pub tempo: f32,
+    pub quantize: i32,
     pub tick: i32,
     pub bpm_has_biped: bool,
     pub bars: i32,
@@ -52,7 +53,8 @@ pub struct SequencerData {
     pub is_recording: bool,
     pub instrument_selected_id: usize,
     pub insruments: Vec<InstrumentData>,
-    pub receiver: Receiver<Message>
+    pub receiver: Receiver<Message>,
+    pub record_session: i32
 }
 
 impl SequencerData {
@@ -62,6 +64,7 @@ impl SequencerData {
         let mut data = SequencerData {
             tick: 0,
             tempo: 90.0,
+            quantize: 64,
             bars: 2,
             is_playing: false,
             bpm_has_biped: false,
@@ -72,7 +75,8 @@ impl SequencerData {
             instrument_selected_id: 0,
             tick_time: 0.0,
             insruments: Vec::new(),
-            receiver
+            receiver,
+            record_session: 0
         };
         data.compute_tick_time();
         (data, sender)
@@ -97,6 +101,9 @@ impl SequencerData {
                 },
                 Message::SetIsRecording(x) => {
                     self.is_recording = x;
+                    if self.is_recording {
+                        self.record_session += 1;
+                    }
                 },
                 Message::SetBpmHasBiped(x) => {
                     self.bpm_has_biped = x;

@@ -36,7 +36,7 @@ pub struct Sequencer {
     metronome: Metronome,
     buffer_size: usize,
     processors: Vec<Box<dyn Processor>>,
-    fifo_queue_midi_message: FifoQueue<MidiMessage>,
+    // fifo_queue_midi_message: FifoQueue<MidiMessage>,
     pub audio_state_senders: Vec<Sender<sequencer_data::Message>>
 }
 
@@ -54,7 +54,7 @@ impl Sequencer {
             metronome: metronome,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            fifo_queue_midi_message: FifoQueue::new(64),
+            // fifo_queue_midi_message: FifoQueue::new(64),
             data,
             audio_state_senders: Vec::new(),
         };
@@ -94,30 +94,31 @@ impl Sequencer {
         return false;
     }
 
-    pub fn handle_incoming_note_events(&mut self) {
-        loop {
-            let midi_message = self.fifo_queue_midi_message.read();
-            if let Some(midi_message) = midi_message {
-                let idx = self.data.instrument_selected_id;
-                if self.data.instrument_selected_id < self.processors.len() {
-                    self.processors[idx].add_notes_event(*midi_message); 
-                }
-            } else {
-                break;
-            }
-        }
-    }
+    // pub fn handle_incoming_note_events(&mut self) {
+    //     loop {
+    //         let midi_message = self.fifo_queue_midi_message.read();
+    //         if let Some(midi_message) = midi_message {
+    //             let idx = self.data.instrument_selected_id;
+    //             if self.data.instrument_selected_id < self.processors.len() {
+    //                 self.processors[idx].add_notes_event(*midi_message); 
+    //             }
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    // }
 
     pub fn play_recorded_note_events(&mut self) {
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
-                if self.processors[i].get_notes_events()[k].tick == self.data.tick {
-                    if self.processors[i].get_notes_events()[k].first == NOTE_OFF as u8 {
-                        let note_id = self.processors[i].get_notes_events()[k].second;
+                let note_event =  self.processors[i].get_notes_events()[k].clone();
+                if note_event.tick == self.data.tick && self.data.record_session != note_event.record_session {
+                    if note_event.first == NOTE_OFF as u8 {
+                        let note_id = note_event.second;
                         self.processors[i].note_off(note_id);
                     }
-                    if self.processors[i].get_notes_events()[k].first == NOTE_ON as u8 {
-                        let note_id = self.processors[i].get_notes_events()[k].second;
+                    if note_event.first == NOTE_ON as u8 {
+                        let note_id = note_event.second;
                         self.processors[i].note_on(note_id, 1.0);
                     }
                 }
@@ -141,9 +142,9 @@ impl Sequencer {
 
             if self.data.tick >= self.data.bars * self.data.ticks_per_quarter_note * 4 {
                 self.data.tick = 0;
+                self.data.record_session += 1;
             }
         }
-        self.handle_incoming_note_events();
     }
 
     pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
@@ -189,15 +190,15 @@ impl Sequencer {
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_on(note_id, 1.0);
-            if self.data.is_recording {
-                self.fifo_queue_midi_message.write(
-                    MidiMessage {
-                        first: NOTE_ON,
-                        second: note_id,
-                        third: 127,
-                        tick: self.data.tick
-                    }
-                );
+            if self.data.is_recording && self.data.is_playing {
+                let quantize_tick = self.quantize_tick();
+                self.processors[idx].add_notes_event(MidiMessage {
+                    first: NOTE_ON,
+                    second: note_id,
+                    third: 127,
+                    tick: quantize_tick,
+                    record_session: self.data.record_session
+                }); 
             }
         }
     }
@@ -206,15 +207,15 @@ impl Sequencer {
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_off(note_id);
-                if self.data.is_recording {
-                    self.fifo_queue_midi_message.write(
-                        MidiMessage {
-                            first: NOTE_OFF,
-                            second: note_id,
-                            third: 127,
-                            tick: self.data.tick
-                        }
-                    );
+                if self.data.is_recording && self.data.is_playing {
+                    let quantize_tick = self.quantize_tick();
+                    self.processors[idx].add_notes_event( MidiMessage {
+                        first: NOTE_OFF,
+                        second: note_id,
+                        third: 127,
+                        tick: quantize_tick,
+                        record_session: self.data.record_session
+                    });
                 }
         }
     }
@@ -225,6 +226,16 @@ impl Sequencer {
                 self.processors[i].clear_notes_events();
             }
         }
+    }
+
+    fn quantize_tick(&self) -> i32 {
+        let current_tick = self.data.tick;
+        let interval = ((1. / self.data.quantize as f32) * self.data.ticks_per_quarter_note as f32) as i32;
+        let lower = current_tick / interval;
+        let offset = current_tick % interval;
+        let highest = offset / (interval / 2);
+        let quantize_tick = (lower + highest) * interval;
+        return quantize_tick;
     }
 
 }

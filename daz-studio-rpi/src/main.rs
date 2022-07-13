@@ -83,7 +83,8 @@ fn main() {
                         first: message[0],
                         second: message[1],
                         third: message[2],
-                        tick: 0
+                        tick: 0,
+                        record_session: -1
                     })).unwrap();
                 }
             }, ());
@@ -152,7 +153,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                             first: 0x9c,
                             second: *note.unwrap(),
                             third: 127,
-                            tick: 0
+                            tick: 0,
+                            record_session: -1
                         })).unwrap();
                     }
                 },
@@ -183,7 +185,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                                 first: 0x8c,
                                 second: *note,
                                 third: 127,
-                                tick: 0
+                                tick: 0,
+                                record_session: -1
                             })).unwrap();
                         }
                     }
