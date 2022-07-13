@@ -1,5 +1,5 @@
 
-use sequencer::sequencer_data::SequencerData;
+use sequencer::sequencer_data::{SequencerData, PairedNotes};
 
 use core::convert::Infallible;
 use embedded_graphics::{
@@ -25,6 +25,8 @@ pub const SCREEN_HEIGHT: u32 = 240;
 
 pub const BACKGROUND_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
 
+pub const INSTRUMENT_COLOR : Rgb888  = Rgb888::new(234, 224, 213);
+
 pub struct MainUI {
    pub metronome_left: bool,
 }
@@ -35,7 +37,7 @@ impl MainUI {
         display: &mut SimulatorDisplay<Rgb888>,
     ) -> Result<(), Infallible> {
     
-        let instrument_color = Rgb888::new(234, 224, 213);
+
         let metronome_color = BACKGROUND_COLOR;
         let play_head_color = Rgb888::new(254, 177, 4);
         let play_color = Rgb888::new(53, 114, 102);
@@ -47,11 +49,11 @@ impl MainUI {
         data_ui.bpm_has_biped = false;
     
         let fill_rect = PrimitiveStyleBuilder::new()
-            .fill_color(instrument_color)
+            .fill_color(INSTRUMENT_COLOR)
             .build();
     
         let stroke_rect = PrimitiveStyleBuilder::new()
-            .stroke_color(instrument_color)
+            .stroke_color(INSTRUMENT_COLOR)
             .stroke_width(1)
             .build();
     
@@ -173,7 +175,7 @@ impl MainUI {
             let height_rect = 30;
             for insrument in data_ui.insruments.iter() {
     
-                let mut text_style = MonoTextStyle::new(&FONT_6X12, instrument_color);
+                let mut text_style = MonoTextStyle::new(&FONT_6X12, INSTRUMENT_COLOR);
     
                 if data_ui.instrument_selected_id == i as usize {
                     text_style = MonoTextStyle::new(&FONT_6X12, BACKGROUND_COLOR);
@@ -220,10 +222,55 @@ impl MainUI {
                 play_head
                     .into_styled(PrimitiveStyle::with_stroke(play_head_color, 1))
                     .draw(display)?;
+
+                self.draw_notes(display, &insrument.paired_notes, rectangle_instrument_notes, data_ui.bars * 4 * data_ui.ticks_per_quarter_note)?;
     
             }
         }
     
         Ok(())
-    }   
+    }
+
+    fn draw_notes(&mut self, display: &mut SimulatorDisplay<Rgb888>, note_events: &Vec<PairedNotes>, box_draw: Rectangle, nb_ticks: i32) -> Result<(), Infallible> {
+    
+        let mut maxNote = 0;
+        let mut minNote = 108;
+
+        let fill_rect = PrimitiveStyleBuilder::new()
+            .fill_color(INSTRUMENT_COLOR)
+            .build();
+    
+        for note_event in note_events.iter() {
+            if maxNote < note_event.note_id {
+                maxNote = note_event.note_id;
+            }
+            if minNote > note_event.note_id {
+                minNote = note_event.note_id;
+            }
+        }
+    
+        let size_tick = box_draw.size.width as f32 * 1.0 / nb_ticks as f32;
+    
+        for note_event in note_events.iter() {
+            let note_index = (maxNote - note_event.note_id) as i32;
+            let tick_duration = note_event.tick_off + 1 - note_event.tick_on;
+            let x_note = box_draw.top_left.x + (note_event.tick_on as f32 * size_tick) as i32;
+            let h = box_draw.size.height / ((maxNote as u32 + 2) - minNote as u32);
+            let y_note = box_draw.top_left.y + note_index as i32 * h as i32 + box_draw.size.height as i32 / 2 - ((maxNote as i32 - minNote as i32) * h as i32) / 2;
+            let mut w_note = (tick_duration as f32 * size_tick as f32) as u32;
+    
+            if w_note < 4 {
+                w_note = 4;
+            }
+
+            Rectangle::new(
+                Point::new(x_note, y_note), 
+                Size::new(w_note as u32, 2)
+            ).into_styled(
+                fill_rect
+            ).draw(display)?;
+        }
+        Ok({})    
+    }
+
 }

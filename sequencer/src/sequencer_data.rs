@@ -2,13 +2,16 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 
-#[derive(Copy, Clone)]
+use crate::midimessage::MidiMessage;
+
+#[derive(Clone)]
 pub enum Message {
     SetTempo(f32),
     SetTick(i32),
     SetVolume(f32),
     SetMetronomeActive(bool),
     SetBpmHasBiped(bool),
+    SetMidiMessagesInstrument(Vec<MidiMessage>),
     NextInstrument,
     PreviousInstrument,
     PlayStop,
@@ -32,11 +35,20 @@ impl DataBroadcaster {
 }
 
 #[derive(Clone)]
+pub struct PairedNotes {
+    pub note_id: u8,
+    pub tick_on: i32,
+    pub tick_off: i32,
+}
+
+#[derive(Clone)]
 pub struct InstrumentData {
     pub name: String,
     pub volume: f32,
     pub current_preset_id: usize,
     pub presets: Vec<String>,
+    pub midi_messages: Vec<MidiMessage>,
+    pub paired_notes: Vec<PairedNotes>
 }
 
 pub struct SequencerData {
@@ -132,6 +144,30 @@ impl SequencerData {
                         self.insruments[self.instrument_selected_id].current_preset_id -= 1;
                     } else {
                         self.insruments[self.instrument_selected_id].current_preset_id = self.insruments[self.instrument_selected_id].presets.len() - 1;
+                    }
+                },
+                Message::SetMidiMessagesInstrument(mut note_events) => {
+                    note_events.sort_by(|a, b| a.tick.partial_cmp(&b.tick).unwrap());
+                    self.insruments[self.instrument_selected_id].midi_messages = note_events;
+                    self.insruments[self.instrument_selected_id].paired_notes.clear();
+                    
+                    let midi_messages = &mut self.insruments[self.instrument_selected_id].midi_messages.clone();
+                    
+                    for i in 0..midi_messages.len() {
+                        let note_event_on = midi_messages[i];
+                        for j in i..midi_messages.len() {
+                            let note_event_off = midi_messages[j];
+                            if (note_event_on.first & 0xf0 == 0x90) && 
+                                (note_event_off.first & 0xf0 == 0x80) && 
+                                note_event_on.second == note_event_off.second {
+                                self.insruments[self.instrument_selected_id].paired_notes.push(PairedNotes {
+                                    note_id: note_event_on.second,
+                                    tick_on: note_event_on.tick,
+                                    tick_off: note_event_off.tick,
+                                });
+                                break;
+                            }
+                        }
                     }
                 },
                 _ => (),

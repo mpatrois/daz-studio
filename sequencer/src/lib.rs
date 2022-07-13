@@ -16,7 +16,6 @@ use crate::metronome::metronome::Metronome;
 use crate::synthesizer::synthesizer::Synthesizer;
 use crate::sampler::sampler::Sampler;
 use crate::midimessage::MidiMessage;
-use crate::fifoqueue::FifoQueue;
 use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
 use crate::sequencer_data::Message as SequencerDataMessage;
@@ -36,8 +35,8 @@ pub struct Sequencer {
     metronome: Metronome,
     buffer_size: usize,
     processors: Vec<Box<dyn Processor>>,
-    // fifo_queue_midi_message: FifoQueue<MidiMessage>,
-    pub audio_state_senders: Vec<Sender<sequencer_data::Message>>
+    pub audio_state_senders: Vec<Sender<sequencer_data::Message>>,
+    has_new_notes: bool
 }
 
 impl Sequencer {
@@ -54,9 +53,9 @@ impl Sequencer {
             metronome: metronome,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            // fifo_queue_midi_message: FifoQueue::new(64),
             data,
             audio_state_senders: Vec::new(),
+            has_new_notes: false
         };
 
         sequencer.compute_elapsed_time_each_render();
@@ -74,6 +73,8 @@ impl Sequencer {
                 volume: 1.0,
                 current_preset_id: processor.get_current_preset_id(),
                 presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
+                midi_messages: Vec::new(),
+                paired_notes: Vec::new()
             });
         }
         return (sequencer, sender);
@@ -93,20 +94,6 @@ impl Sequencer {
         }
         return false;
     }
-
-    // pub fn handle_incoming_note_events(&mut self) {
-    //     loop {
-    //         let midi_message = self.fifo_queue_midi_message.read();
-    //         if let Some(midi_message) = midi_message {
-    //             let idx = self.data.instrument_selected_id;
-    //             if self.data.instrument_selected_id < self.processors.len() {
-    //                 self.processors[idx].add_notes_event(*midi_message); 
-    //             }
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    // }
 
     pub fn play_recorded_note_events(&mut self) {
         for i in 0..self.processors.len() {
@@ -159,10 +146,19 @@ impl Sequencer {
         if self.data.is_playing {
             let bpm_has_bipped = self.data.bpm_has_biped;
             self.update();
+            
             for sender in self.audio_state_senders.iter() {
                 sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
                 if !bpm_has_bipped && self.data.bpm_has_biped {
                     sender.send(SequencerDataMessage::SetBpmHasBiped(self.data.bpm_has_biped)).unwrap();
+                }
+                if self.has_new_notes {
+                    let idx = self.data.instrument_selected_id;
+                    if self.data.instrument_selected_id < self.processors.len() {
+                        let note_events = self.processors[idx].get_notes_events().clone();
+                        sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events)).unwrap();
+                    }
+                    self.has_new_notes = false;
                 }
             }
         }
@@ -199,6 +195,7 @@ impl Sequencer {
                     tick: quantize_tick,
                     record_session: self.data.record_session
                 }); 
+                self.has_new_notes = true;
             }
         }
     }
@@ -216,6 +213,7 @@ impl Sequencer {
                         tick: quantize_tick,
                         record_session: self.data.record_session
                     });
+                    self.has_new_notes = true;
                 }
         }
     }
