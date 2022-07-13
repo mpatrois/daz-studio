@@ -1,5 +1,5 @@
 
-use sequencer::{sequencer_data::{SequencerData, PairedNotes}, midimessage::NoteEvent};
+use sequencer::{sequencer_data::{SequencerData}, midimessage::NoteEvent};
 
 use core::convert::Infallible;
 use embedded_graphics::{
@@ -128,7 +128,7 @@ impl MainUI {
                     .draw(display)?;
             }
     
-            let mut point_head_metronome : Point;
+            let point_head_metronome : Point;
             if self.metronome_left {
                 point_head_metronome = Point::new(triangle_metronome_x, header_rectangle.center().y - h_triangle / 2);
             } else {
@@ -239,28 +239,28 @@ impl MainUI {
     fn draw_notes(&mut self, display: &mut SimulatorDisplay<Rgb888>, note_events: &Vec<NoteEvent>, box_draw: Rectangle, data_ui: & SequencerData) -> Result<(), Infallible> {
         
         let nb_ticks = data_ui.bars * 4 * data_ui.ticks_per_quarter_note;
-        let mut maxNote = 0;
-        let mut minNote = 108;
+        let mut max_note = 0;
+        let mut min_note = 108;
 
         let fill_rect = PrimitiveStyleBuilder::new()
             .fill_color(INSTRUMENT_COLOR)
             .build();
     
         for note_event in note_events.iter() {
-            if maxNote < note_event.note_id {
-                maxNote = note_event.note_id;
+            if max_note < note_event.note_id {
+                max_note = note_event.note_id;
             }
-            if minNote > note_event.note_id {
-                minNote = note_event.note_id;
+            if min_note > note_event.note_id {
+                min_note = note_event.note_id;
             }
         }
     
         let size_tick = box_draw.size.width as f32 * 1.0 / nb_ticks as f32;
     
         for note_event in note_events.iter() {
-            let note_index = (maxNote - note_event.note_id) as i32;
+            let note_index = (max_note - note_event.note_id) as i32;
 
-            let mut tick_duration = 0;
+            let tick_duration : i32;
             if note_event.tick_off == -1 {
                 tick_duration = data_ui.tick - note_event.tick_on;
             } else {
@@ -268,8 +268,8 @@ impl MainUI {
             } 
             
             let x_note = box_draw.top_left.x + (note_event.tick_on as f32 * size_tick) as i32;
-            let h = box_draw.size.height / ((maxNote as u32 + 2) - minNote as u32);
-            let y_note = box_draw.top_left.y + note_index as i32 * h as i32 + box_draw.size.height as i32 / 2 - ((maxNote as i32 - minNote as i32) * h as i32) / 2;
+            let h = box_draw.size.height / ((max_note as u32 + 2) - min_note as u32);
+            let y_note = box_draw.top_left.y + note_index as i32 * h as i32 + box_draw.size.height as i32 / 2 - ((max_note as i32 - min_note as i32) * h as i32) / 2;
             let mut w_note = (tick_duration as f32 * size_tick as f32) as u32;
     
             if w_note < 4 {

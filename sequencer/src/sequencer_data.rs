@@ -36,19 +36,11 @@ impl DataBroadcaster {
 }
 
 #[derive(Clone)]
-pub struct PairedNotes {
-    pub note_id: u8,
-    pub tick_on: i32,
-    pub tick_off: i32,
-}
-
-#[derive(Clone)]
 pub struct InstrumentData {
     pub name: String,
     pub volume: f32,
     pub current_preset_id: usize,
     pub presets: Vec<String>,
-    // pub midi_messages: Vec<MidiMessage>,
     pub paired_notes: Vec<NoteEvent>
 }
 
