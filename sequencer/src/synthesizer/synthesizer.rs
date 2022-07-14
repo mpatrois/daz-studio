@@ -162,6 +162,12 @@ impl Processor for Synthesizer {
         }
     }
 
+    fn all_note_off(&mut self) {
+        for i in 0..self.voices.len() {
+            self.voices[i].stop_note();
+        }
+    }
+
     fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;

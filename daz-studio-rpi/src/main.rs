@@ -162,6 +162,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                     match keycode {
                         Keycode::Escape => break 'main_loop,
                         Keycode::Space => broadcaster.send(Message::PlayStop),
+                        Keycode::Backspace => broadcaster.send(Message::UndoLastSession),
                         Keycode::Up => broadcaster.send(Message::PreviousInstrument),
                         Keycode::Down => broadcaster.send(Message::NextInstrument),
                         Keycode::Left => broadcaster.send(Message::PreviousPreset),

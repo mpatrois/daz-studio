@@ -133,29 +133,50 @@ impl Sequencer {
     pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         self.data.process_messages();
 
+        if self.data.undo_last_session {
+            if self.data.instrument_selected_id < self.processors.len() {
+                let mut lastSession = 0;
+                let note_events = &mut self.processors[self.data.instrument_selected_id].get_notes_events();
+                for note_event in note_events.iter() {
+                    if note_event.record_session > lastSession {
+                        lastSession = note_event.record_session;
+                    }
+                }
+
+                while note_events.iter()
+                    .position(|&n| n.record_session == lastSession)
+                    .map(|e| note_events.remove(e)).is_some() {}
+                
+                self.processors[self.data.instrument_selected_id].all_note_off();
+            }
+        }
+
         let mut i : usize = 0;
         for instrument in self.data.insruments.iter() {
             self.processors[i].set_current_preset_id(instrument.current_preset_id);
             i += 1;
         }
 
+        let bpm_has_bipped = self.data.bpm_has_biped;
         if self.data.is_playing {
-            let bpm_has_bipped = self.data.bpm_has_biped;
             self.update();
             
-            for sender in self.audio_state_senders.iter() {
+        }
+        for sender in self.audio_state_senders.iter() {
+            if self.data.is_playing {
                 sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
-                if !bpm_has_bipped && self.data.bpm_has_biped {
+                if !bpm_has_bipped || self.data.bpm_has_biped {
                     sender.send(SequencerDataMessage::SetBpmHasBiped(self.data.bpm_has_biped)).unwrap();
                 }
-                if self.has_new_notes {
-                    let idx = self.data.instrument_selected_id;
-                    if self.data.instrument_selected_id < self.processors.len() {
-                        let note_events = self.processors[idx].get_notes_events().clone();
-                        sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events)).unwrap();
-                    }
-                    self.has_new_notes = false;
+            }
+            if self.has_new_notes || self.data.undo_last_session {
+                let idx = self.data.instrument_selected_id;
+                if self.data.instrument_selected_id < self.processors.len() {
+                    let note_events = self.processors[idx].get_notes_events().clone();
+                    sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events)).unwrap();
                 }
+                self.has_new_notes = false;
+                self.data.undo_last_session = false;
             }
         }
 

@@ -20,6 +20,7 @@ pub enum Message {
     PreviousPreset,
     SetIsRecording(bool),
     SetCurrentInstrumentSelected(usize),
+    UndoLastSession,
 }
 
 #[derive(Clone)]
@@ -59,7 +60,8 @@ pub struct SequencerData {
     pub instrument_selected_id: usize,
     pub insruments: Vec<InstrumentData>,
     pub receiver: Receiver<Message>,
-    pub record_session: i32
+    pub record_session: i32,
+    pub undo_last_session: bool
 }
 
 impl SequencerData {
@@ -81,7 +83,8 @@ impl SequencerData {
             tick_time: 0.0,
             insruments: Vec::new(),
             receiver,
-            record_session: 0
+            record_session: 0,
+            undo_last_session: false
         };
         data.compute_tick_time();
         (data, sender)
@@ -141,6 +144,9 @@ impl SequencerData {
                 },
                 Message::SetMidiMessagesInstrument(note_events) => {
                     self.insruments[self.instrument_selected_id].paired_notes = note_events;
+                },
+                Message::UndoLastSession => {
+                    self.undo_last_session = true;
                 },
                 _ => (),
             }

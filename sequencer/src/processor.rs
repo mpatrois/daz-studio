@@ -4,6 +4,7 @@ use crate::preset::Preset;
 pub trait Processor {
     fn note_on(&mut self, midi_note: u8, velocity: f32);
     fn note_off(&mut self, midi_note: u8);
+    fn all_note_off(&mut self);
     fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize);
     
     fn clear_notes_events(&mut self);
