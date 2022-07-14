@@ -2,7 +2,7 @@ use midir::{MidiInput, Ignore};
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 48_000.0;
-const FRAMES_PER_BUFFER: u32 = 512;
+const FRAMES_PER_BUFFER: u32 = 128;
 
 mod ui;
 
@@ -82,9 +82,7 @@ fn main() {
                     midi_event_sender.send(sequencer::Message::Midi( MidiMessage {
                         first: message[0],
                         second: message[1],
-                        third: message[2],
-                        tick: 0,
-                        record_session: -1
+                        third: message[2]
                     })).unwrap();
                 }
             }, ());
@@ -152,9 +150,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
                             first: 0x9c,
                             second: *note.unwrap(),
-                            third: 127,
-                            tick: 0,
-                            record_session: -1
+                            third: 127
                         })).unwrap();
                     }
                 },
@@ -184,9 +180,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                             midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
                                 first: 0x8c,
                                 second: *note,
-                                third: 127,
-                                tick: 0,
-                                record_session: -1
+                                third: 127
                             })).unwrap();
                         }
                     }

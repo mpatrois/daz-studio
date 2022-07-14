@@ -20,8 +20,6 @@ use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
 use crate::sequencer_data::Message as SequencerDataMessage;
 use crate::midimessage::MidiMessage;
-// use crate::midimessage::NOTE_OFF;
-// use crate::midimessage::NOTE_OFF;
 use std::sync::mpsc::Sender;
 
 pub enum Message {
@@ -74,7 +72,6 @@ impl Sequencer {
                 volume: 1.0,
                 current_preset_id: processor.get_current_preset_id(),
                 presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
-                // midi_messages: Vec::new(),
                 paired_notes: Vec::new()
             });
         }
@@ -100,7 +97,7 @@ impl Sequencer {
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
                 let note_event = self.processors[i].get_notes_events()[k].clone();
-                if self.data.record_session != note_event.record_session {
+                if self.data.record_session != note_event.record_session && note_event.tick_off != -1 {
                     if note_event.tick_on == self.data.tick {
                         self.processors[i].note_on(note_event.note_id, 1.0);
                     }
@@ -155,7 +152,7 @@ impl Sequencer {
                     let idx = self.data.instrument_selected_id;
                     if self.data.instrument_selected_id < self.processors.len() {
                         let note_events = self.processors[idx].get_notes_events().clone();
-                        sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events.clone())).unwrap();
+                        sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events)).unwrap();
                     }
                     self.has_new_notes = false;
                 }
@@ -182,6 +179,7 @@ impl Sequencer {
     }
 
     pub fn note_on(&mut self, note_id: u8) {
+        // println!("{}", note_id);
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_on(note_id, 1.0);
@@ -192,7 +190,10 @@ impl Sequencer {
                     tick_off: -1,
                     note_id,
                     record_session: self.data.record_session
-                }); 
+                });
+                self.processors[idx].get_notes_events()
+                    .sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());
+
                 self.has_new_notes = true;
             }
         }
@@ -215,10 +216,13 @@ impl Sequencer {
                             continue;
                         }
                         note_event.tick_off = quantize_tick;
-                        
-                        self.processors[idx].get_notes_events()
-                            .sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());
-                        
+                      
+                        if note_event.tick_off == note_event.tick_on {
+                            note_event.tick_off += ((1 as f32 / self.data.quantize as f32) * self.data.ticks_per_quarter_note as f32) as i32;
+                            if note_event.tick_off > self.data.bars * 4 * self.data.ticks_per_quarter_note - 1 {
+                                note_event.tick_off = self.data.bars * 4 * self.data.ticks_per_quarter_note - 1;
+                            }
+                        }
                         break;
                     }
 
@@ -242,6 +246,10 @@ impl Sequencer {
         let offset = current_tick % interval;
         let highest = offset / (interval / 2);
         let quantize_tick = (lower + highest) * interval;
+
+        if quantize_tick >= self.data.bars * 4 * self.data.ticks_per_quarter_note - 120 {
+            return 0;
+        }
         return quantize_tick;
     }
 

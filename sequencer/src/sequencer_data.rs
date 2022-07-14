@@ -69,7 +69,7 @@ impl SequencerData {
         let mut data = SequencerData {
             tick: 0,
             tempo: 90.0,
-            quantize: 8,
+            quantize: 16,
             bars: 2,
             is_playing: false,
             bpm_has_biped: false,
@@ -139,29 +139,8 @@ impl SequencerData {
                         self.insruments[self.instrument_selected_id].current_preset_id = self.insruments[self.instrument_selected_id].presets.len() - 1;
                     }
                 },
-                Message::SetMidiMessagesInstrument(mut note_events) => {
-                    // note_events.sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());
-                    // self.insruments[self.instrument_selected_id].midi_messages = note_events;
+                Message::SetMidiMessagesInstrument(note_events) => {
                     self.insruments[self.instrument_selected_id].paired_notes = note_events;
-                    
-                    // let midi_messages = &mut self.insruments[self.instrument_selected_id].midi_messages.clone();
-                    
-                    // for i in 0..midi_messages.len() {
-                    //     let note_event_on = midi_messages[i];
-                    //     for j in i..midi_messages.len() {
-                    //         let note_event_off = midi_messages[j];
-                    //         if (note_event_on.first & 0xf0 == 0x90) && 
-                    //             (note_event_off.first & 0xf0 == 0x80) && 
-                    //             note_event_on.second == note_event_off.second {
-                    //             self.insruments[self.instrument_selected_id].paired_notes.push(PairedNotes {
-                    //                 note_id: note_event_on.second,
-                    //                 tick_on: note_event_on.tick,
-                    //                 tick_off: note_event_off.tick,
-                    //             });
-                    //             break;
-                    //         }
-                    //     }
-                    // }
                 },
                 _ => (),
             }
