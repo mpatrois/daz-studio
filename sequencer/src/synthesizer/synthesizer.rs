@@ -1,6 +1,5 @@
 use crate::midimessage::NoteEvent;
 use crate::processor::Processor;
-use crate::midimessage::MidiMessage;
 use crate::synthesizer::synthesizervoice::SynthesizerVoice;
 
 use crate::synthesizer::operator::SINE;

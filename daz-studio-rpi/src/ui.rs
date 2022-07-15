@@ -38,6 +38,7 @@ impl MainUI {
     ) -> Result<(), Infallible> {
     
 
+        let metronome_color_active = Rgb888::new(15, 113, 214);
         let metronome_color = BACKGROUND_COLOR;
         let play_head_color = Rgb888::new(254, 177, 4);
         let play_color = Rgb888::new(53, 114, 102);
@@ -113,20 +114,18 @@ impl MainUI {
     
         // Metronome
         {
+            let mut color = metronome_color;
+            if data_ui.metronome_active {
+                color = metronome_color_active;
+            }
             let triangle_metronome = Triangle::new(
                 Point::new(triangle_metronome_x, header_rectangle.center().y + h_triangle / 2),
                 Point::new(triangle_metronome_x + w_triangle / 2, header_rectangle.center().y - h_triangle / 2),
                 Point::new(triangle_metronome_x + w_triangle, header_rectangle.center().y + h_triangle / 2),
             );
-            if data_ui.metronome_active {
-                triangle_metronome
-                    .into_styled(PrimitiveStyle::with_fill(metronome_color))
-                    .draw(display)?;
-            } else {
-                triangle_metronome
-                    .into_styled(PrimitiveStyle::with_stroke(metronome_color, 1))
-                    .draw(display)?;
-            }
+            triangle_metronome
+                .into_styled(PrimitiveStyle::with_stroke(color, 1))
+                .draw(display)?;
     
             let point_head_metronome : Point;
             if self.metronome_left {
@@ -140,17 +139,18 @@ impl MainUI {
                 4 as u32
             );
     
-            circle_metronome
-                .into_styled(PrimitiveStyle::with_fill(metronome_color))
-                .draw(display)?;
-    
             let line_metronome = Line::new(
                 Point::new(triangle_metronome_x + w_triangle / 2, header_rectangle.center().y + h_triangle / 2 - 4),
                 point_head_metronome
             );
-            line_metronome
-                .into_styled(PrimitiveStyle::with_stroke(metronome_color, 1))
+
+            circle_metronome
+                .into_styled(PrimitiveStyle::with_fill(color))
                 .draw(display)?;
+            line_metronome
+                .into_styled(PrimitiveStyle::with_stroke(color, 1))
+                .draw(display)?;
+
         }
     
         // Tempo
@@ -161,6 +161,20 @@ impl MainUI {
             let text = Text::new(
                 &text_data, 
                 Point::new(SCREEN_WIDTH as i32 - 48 - 10, header_rectangle.center().y + 13/3), 
+                text_style
+            );
+                
+            text.draw(display)?;
+        }
+        
+        // Quantize
+        {
+            let text_style = MonoTextStyle::new(&FONT_8X13, BACKGROUND_COLOR);
+            
+            let text_data =  ["Q", &data_ui.get_quantize().to_string()].join(":").to_string();
+            let text = Text::new(
+                &text_data, 
+                Point::new(SCREEN_WIDTH as i32 - 48 - 10 - 45, header_rectangle.center().y + 13/3), 
                 text_style
             );
                 

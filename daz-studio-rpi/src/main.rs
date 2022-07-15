@@ -2,7 +2,7 @@ use midir::{MidiInput, Ignore};
 
 const CHANNELS: i32 = 2;
 const SAMPLE_RATE: f64 = 48_000.0;
-const FRAMES_PER_BUFFER: u32 = 128;
+const FRAMES_PER_BUFFER: u32 = 256;
 
 mod ui;
 
@@ -26,6 +26,7 @@ use embedded_graphics_simulator::{
     OutputSettingsBuilder, SimulatorDisplay, SimulatorEvent, Window,
 };
 use std::{thread, time::Duration};
+
 
 fn main() {
     
@@ -103,7 +104,7 @@ fn main() {
 
 fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut SequencerData, broadcaster: DataBroadcaster) -> Result<(), Infallible> {
     let output_settings = OutputSettingsBuilder::new().scale(1).build();
-    let mut window = Window::new("Daz Studio Emulator", &output_settings);
+    let mut window = Window::new("Emulator", &output_settings);
 
     let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
 
@@ -145,6 +146,10 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         break 'main_loop;
                     }
 
+                    if keycode == Keycode::Space {
+                        broadcaster.send(Message::PlayStop);
+                    } 
+                    
                     let note = key_board_notes.get(&keycode); 
                     if note.is_some() {
                         midi_event_sender.send(sequencer::Message::Midi(MidiMessage {
@@ -161,7 +166,6 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                 } => {
                     match keycode {
                         Keycode::Escape => break 'main_loop,
-                        Keycode::Space => broadcaster.send(Message::PlayStop),
                         Keycode::Backspace => broadcaster.send(Message::UndoLastSession),
                         Keycode::Up => broadcaster.send(Message::PreviousInstrument),
                         Keycode::Down => broadcaster.send(Message::NextInstrument),
@@ -170,10 +174,16 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
                         Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
                         Keycode::C => {
+                            broadcaster.send(Message::PreviousQuantize);
+                        },
+                        Keycode::V => {
+                            broadcaster.send(Message::NextQuantize);
+                        },
+                        Keycode::B => {
                             let new_tempo = data_ui.tempo - 1.0;
                             broadcaster.send(Message::SetTempo(new_tempo));
                         },
-                        Keycode::V => {
+                        Keycode::N => {
                             let new_tempo = data_ui.tempo + 1.0;
                             broadcaster.send(Message::SetTempo(new_tempo));
                         },

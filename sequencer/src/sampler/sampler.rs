@@ -1,9 +1,8 @@
 use crate::processor::Processor;
-use crate::midimessage::{MidiMessage, NoteEvent};
+use crate::midimessage::NoteEvent;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
 use crate::sampler::sampler_preset::SamplerPreset;
-// use crate::sampler::sampler_preset::SampleInfo;
 use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;

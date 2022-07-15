@@ -35,7 +35,8 @@ pub struct Sequencer {
     buffer_size: usize,
     processors: Vec<Box<dyn Processor>>,
     pub audio_state_senders: Vec<Sender<sequencer_data::Message>>,
-    has_new_notes: bool
+    has_new_notes: bool,
+    stamp: i32,
 }
 
 impl Sequencer {
@@ -54,7 +55,8 @@ impl Sequencer {
             processors: Vec::new(),
             data,
             audio_state_senders: Vec::new(),
-            has_new_notes: false
+            has_new_notes: false,
+            stamp: 0,
         };
 
         sequencer.compute_elapsed_time_each_render();
@@ -93,11 +95,13 @@ impl Sequencer {
         return false;
     }
 
-    pub fn play_recorded_note_events(&mut self) {
+    pub fn play_recorded_note_events(&mut self) {    
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
-                let note_event = self.processors[i].get_notes_events()[k].clone();
-                if self.data.record_session != note_event.record_session && note_event.tick_off != -1 {
+                let note_event = self.processors[i].get_notes_events()[k];
+                
+                let record_recently = (self.stamp - note_event.stamp_record) < self.data.nb_ticks() / 2;
+                if note_event.tick_off != -1 && !record_recently {
                     if note_event.tick_on == self.data.tick {
                         self.processors[i].note_on(note_event.note_id, 1.0);
                     }
@@ -122,10 +126,10 @@ impl Sequencer {
             self.play_recorded_note_events();
 
             self.data.tick += 1;
+            self.stamp += 1;
 
-            if self.data.tick >= self.data.bars * self.data.ticks_per_quarter_note * 4 {
+            if self.data.tick >= self.data.nb_ticks() {
                 self.data.tick = 0;
-                self.data.record_session += 1;
             }
         }
     }
@@ -135,16 +139,16 @@ impl Sequencer {
 
         if self.data.undo_last_session {
             if self.data.instrument_selected_id < self.processors.len() {
-                let mut lastSession = 0;
+                let mut last_session = 0;
                 let note_events = &mut self.processors[self.data.instrument_selected_id].get_notes_events();
                 for note_event in note_events.iter() {
-                    if note_event.record_session > lastSession {
-                        lastSession = note_event.record_session;
+                    if note_event.record_session > last_session {
+                        last_session = note_event.record_session;
                     }
                 }
 
                 while note_events.iter()
-                    .position(|&n| n.record_session == lastSession)
+                    .position(|&n| n.record_session == last_session)
                     .map(|e| note_events.remove(e)).is_some() {}
                 
                 self.processors[self.data.instrument_selected_id].all_note_off();
@@ -158,14 +162,21 @@ impl Sequencer {
         }
 
         let bpm_has_bipped = self.data.bpm_has_biped;
+        
         if self.data.is_playing {
             self.update();
-            
+        }
+
+        if self.data.kill_all_notes {
+            for processor in self.processors.iter_mut() {
+                processor.all_note_off();
+            }
+            self.data.kill_all_notes = false;
         }
         for sender in self.audio_state_senders.iter() {
             if self.data.is_playing {
                 sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
-                if !bpm_has_bipped || self.data.bpm_has_biped {
+                if !bpm_has_bipped && self.data.bpm_has_biped {
                     sender.send(SequencerDataMessage::SetBpmHasBiped(self.data.bpm_has_biped)).unwrap();
                 }
             }
@@ -200,17 +211,18 @@ impl Sequencer {
     }
 
     pub fn note_on(&mut self, note_id: u8) {
-        // println!("{}", note_id);
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_on(note_id, 1.0);
             if self.data.is_recording && self.data.is_playing {
                 let quantize_tick = self.quantize_tick();
+
                 self.processors[idx].add_notes_event(NoteEvent {
                     tick_on: quantize_tick,
                     tick_off: -1,
                     note_id,
-                    record_session: self.data.record_session
+                    record_session: self.data.record_session,
+                    stamp_record: self.stamp,
                 });
                 self.processors[idx].get_notes_events()
                     .sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());
@@ -228,20 +240,20 @@ impl Sequencer {
                 
                     let quantize_tick = self.quantize_tick();
 
-                    for i in 0..self.processors[idx].get_notes_events().len() {
-                        let mut note_event = &mut self.processors[idx].get_notes_events()[i];
-                        if  note_event.note_id != note_id {
+                    let note_events = self.processors[idx].get_notes_events();
+                    for note_event in note_events.iter_mut() {
+                        if note_event.note_id != note_id {
                             continue;
                         }
-                        if  note_event.tick_off != -1 {
+                        if note_event.tick_off != -1 {
                             continue;
                         }
                         note_event.tick_off = quantize_tick;
                       
                         if note_event.tick_off == note_event.tick_on {
-                            note_event.tick_off += ((1 as f32 / self.data.quantize as f32) * self.data.ticks_per_quarter_note as f32) as i32;
-                            if note_event.tick_off > self.data.bars * 4 * self.data.ticks_per_quarter_note - 1 {
-                                note_event.tick_off = self.data.bars * 4 * self.data.ticks_per_quarter_note - 1;
+                            note_event.tick_off += 120;
+                            if note_event.tick_off > self.data.nb_ticks() - 1 {
+                                note_event.tick_off = self.data.nb_ticks() - 1;
                             }
                         }
                         break;
@@ -261,14 +273,21 @@ impl Sequencer {
     }
 
     fn quantize_tick(&self) -> i32 {
+        if self.data.get_quantize() == -1 {
+            if self.data.tick >= self.data.end_quantize_adjust() {
+                return 0;
+            }
+            return self.data.tick;
+        }
         let current_tick = self.data.tick;
-        let interval = ((1. / self.data.quantize as f32) * self.data.ticks_per_quarter_note as f32) as i32;
+        let interval = self.data.quantize_interval();
         let lower = current_tick / interval;
         let offset = current_tick % interval;
         let highest = offset / (interval / 2);
+
         let quantize_tick = (lower + highest) * interval;
 
-        if quantize_tick >= self.data.bars * 4 * self.data.ticks_per_quarter_note - 120 {
+        if quantize_tick >= self.data.end_quantize_adjust() {
             return 0;
         }
         return quantize_tick;
