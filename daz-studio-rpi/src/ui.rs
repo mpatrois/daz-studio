@@ -1,5 +1,5 @@
 
-use sequencer::sequencer_data::SequencerData;
+use sequencer::{sequencer_data::{SequencerData}, midimessage::NoteEvent};
 
 use core::convert::Infallible;
 use embedded_graphics::{
@@ -25,6 +25,8 @@ pub const SCREEN_HEIGHT: u32 = 240;
 
 pub const BACKGROUND_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
 
+pub const INSTRUMENT_COLOR : Rgb888  = Rgb888::new(234, 224, 213);
+
 pub struct MainUI {
    pub metronome_left: bool,
 }
@@ -35,7 +37,8 @@ impl MainUI {
         display: &mut SimulatorDisplay<Rgb888>,
     ) -> Result<(), Infallible> {
     
-        let instrument_color = Rgb888::new(234, 224, 213);
+
+        let metronome_color_active = Rgb888::new(15, 113, 214);
         let metronome_color = BACKGROUND_COLOR;
         let play_head_color = Rgb888::new(254, 177, 4);
         let play_color = Rgb888::new(53, 114, 102);
@@ -47,11 +50,11 @@ impl MainUI {
         data_ui.bpm_has_biped = false;
     
         let fill_rect = PrimitiveStyleBuilder::new()
-            .fill_color(instrument_color)
+            .fill_color(INSTRUMENT_COLOR)
             .build();
     
         let stroke_rect = PrimitiveStyleBuilder::new()
-            .stroke_color(instrument_color)
+            .stroke_color(INSTRUMENT_COLOR)
             .stroke_width(1)
             .build();
     
@@ -111,22 +114,20 @@ impl MainUI {
     
         // Metronome
         {
+            let mut color = metronome_color;
+            if data_ui.metronome_active {
+                color = metronome_color_active;
+            }
             let triangle_metronome = Triangle::new(
                 Point::new(triangle_metronome_x, header_rectangle.center().y + h_triangle / 2),
                 Point::new(triangle_metronome_x + w_triangle / 2, header_rectangle.center().y - h_triangle / 2),
                 Point::new(triangle_metronome_x + w_triangle, header_rectangle.center().y + h_triangle / 2),
             );
-            if data_ui.metronome_active {
-                triangle_metronome
-                    .into_styled(PrimitiveStyle::with_fill(metronome_color))
-                    .draw(display)?;
-            } else {
-                triangle_metronome
-                    .into_styled(PrimitiveStyle::with_stroke(metronome_color, 1))
-                    .draw(display)?;
-            }
+            triangle_metronome
+                .into_styled(PrimitiveStyle::with_stroke(color, 1))
+                .draw(display)?;
     
-            let mut point_head_metronome : Point;
+            let point_head_metronome : Point;
             if self.metronome_left {
                 point_head_metronome = Point::new(triangle_metronome_x, header_rectangle.center().y - h_triangle / 2);
             } else {
@@ -138,17 +139,18 @@ impl MainUI {
                 4 as u32
             );
     
-            circle_metronome
-                .into_styled(PrimitiveStyle::with_fill(metronome_color))
-                .draw(display)?;
-    
             let line_metronome = Line::new(
                 Point::new(triangle_metronome_x + w_triangle / 2, header_rectangle.center().y + h_triangle / 2 - 4),
                 point_head_metronome
             );
-            line_metronome
-                .into_styled(PrimitiveStyle::with_stroke(metronome_color, 1))
+
+            circle_metronome
+                .into_styled(PrimitiveStyle::with_fill(color))
                 .draw(display)?;
+            line_metronome
+                .into_styled(PrimitiveStyle::with_stroke(color, 1))
+                .draw(display)?;
+
         }
     
         // Tempo
@@ -164,6 +166,20 @@ impl MainUI {
                 
             text.draw(display)?;
         }
+        
+        // Quantize
+        {
+            let text_style = MonoTextStyle::new(&FONT_8X13, BACKGROUND_COLOR);
+            
+            let text_data =  ["Q", &data_ui.get_quantize().to_string()].join(":").to_string();
+            let text = Text::new(
+                &text_data, 
+                Point::new(SCREEN_WIDTH as i32 - 48 - 10 - 45, header_rectangle.center().y + 13/3), 
+                text_style
+            );
+                
+            text.draw(display)?;
+        }
     
         // Instruments
         {
@@ -173,7 +189,7 @@ impl MainUI {
             let height_rect = 30;
             for insrument in data_ui.insruments.iter() {
     
-                let mut text_style = MonoTextStyle::new(&FONT_6X12, instrument_color);
+                let mut text_style = MonoTextStyle::new(&FONT_6X12, INSTRUMENT_COLOR);
     
                 if data_ui.instrument_selected_id == i as usize {
                     text_style = MonoTextStyle::new(&FONT_6X12, BACKGROUND_COLOR);
@@ -220,10 +236,68 @@ impl MainUI {
                 play_head
                     .into_styled(PrimitiveStyle::with_stroke(play_head_color, 1))
                     .draw(display)?;
+
+                self.draw_notes(
+                    display, 
+                    &insrument.paired_notes, 
+                    rectangle_instrument_notes, 
+                    data_ui
+                )?;
     
             }
         }
     
         Ok(())
-    }   
+    }
+
+    fn draw_notes(&mut self, display: &mut SimulatorDisplay<Rgb888>, note_events: &Vec<NoteEvent>, box_draw: Rectangle, data_ui: & SequencerData) -> Result<(), Infallible> {
+        
+        let nb_ticks = data_ui.bars * 4 * data_ui.ticks_per_quarter_note;
+        let mut max_note = 0;
+        let mut min_note = 108;
+
+        let fill_rect = PrimitiveStyleBuilder::new()
+            .fill_color(INSTRUMENT_COLOR)
+            .build();
+    
+        for note_event in note_events.iter() {
+            if max_note < note_event.note_id {
+                max_note = note_event.note_id;
+            }
+            if min_note > note_event.note_id {
+                min_note = note_event.note_id;
+            }
+        }
+    
+        let size_tick = box_draw.size.width as f32 * 1.0 / nb_ticks as f32;
+    
+        for note_event in note_events.iter() {
+            let note_index = (max_note - note_event.note_id) as i32;
+
+            let tick_duration : i32;
+            if note_event.tick_off == -1 {
+                tick_duration = data_ui.tick - note_event.tick_on;
+            } else {
+                tick_duration = note_event.tick_off + 1 - note_event.tick_on;
+            } 
+            
+            let x_note = box_draw.top_left.x + (note_event.tick_on as f32 * size_tick) as i32;
+            let h = box_draw.size.height / ((max_note as u32 + 2) - min_note as u32);
+            let y_note = box_draw.top_left.y + note_index as i32 * h as i32 + box_draw.size.height as i32 / 2 - ((max_note as i32 - min_note as i32) * h as i32) / 2;
+            let mut w_note = (tick_duration as f32 * size_tick as f32) as u32;
+    
+            if w_note < 4 {
+                w_note = 4;
+            }
+
+            Rectangle::new(
+                Point::new(x_note, y_note), 
+                Size::new(w_note as u32, 2)
+            ).into_styled(
+                fill_rect
+            ).draw(display)?;
+        }
+        Ok({})    
+    }
+
 }

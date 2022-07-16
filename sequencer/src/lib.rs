@@ -15,13 +15,11 @@ use crate::processor::Processor;
 use crate::metronome::metronome::Metronome;
 use crate::synthesizer::synthesizer::Synthesizer;
 use crate::sampler::sampler::Sampler;
-use crate::midimessage::MidiMessage;
-use crate::fifoqueue::FifoQueue;
+use crate::midimessage::NoteEvent;
 use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
 use crate::sequencer_data::Message as SequencerDataMessage;
-use crate::midimessage::NOTE_ON;
-use crate::midimessage::NOTE_OFF;
+use crate::midimessage::MidiMessage;
 use std::sync::mpsc::Sender;
 
 pub enum Message {
@@ -36,8 +34,9 @@ pub struct Sequencer {
     metronome: Metronome,
     buffer_size: usize,
     processors: Vec<Box<dyn Processor>>,
-    fifo_queue_midi_message: FifoQueue<MidiMessage>,
-    pub audio_state_senders: Vec<Sender<sequencer_data::Message>>
+    pub audio_state_senders: Vec<Sender<sequencer_data::Message>>,
+    has_new_notes: bool,
+    stamp: i32,
 }
 
 impl Sequencer {
@@ -54,9 +53,10 @@ impl Sequencer {
             metronome: metronome,
             buffer_size: buffer_size,
             processors: Vec::new(),
-            fifo_queue_midi_message: FifoQueue::new(64),
             data,
             audio_state_senders: Vec::new(),
+            has_new_notes: false,
+            stamp: 0,
         };
 
         sequencer.compute_elapsed_time_each_render();
@@ -74,6 +74,7 @@ impl Sequencer {
                 volume: 1.0,
                 current_preset_id: processor.get_current_preset_id(),
                 presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
+                paired_notes: Vec::new()
             });
         }
         return (sequencer, sender);
@@ -94,31 +95,18 @@ impl Sequencer {
         return false;
     }
 
-    pub fn handle_incoming_note_events(&mut self) {
-        loop {
-            let midi_message = self.fifo_queue_midi_message.read();
-            if let Some(midi_message) = midi_message {
-                let idx = self.data.instrument_selected_id;
-                if self.data.instrument_selected_id < self.processors.len() {
-                    self.processors[idx].add_notes_event(*midi_message); 
-                }
-            } else {
-                break;
-            }
-        }
-    }
-
-    pub fn play_recorded_note_events(&mut self) {
+    pub fn play_recorded_note_events(&mut self) {    
         for i in 0..self.processors.len() {
             for k in 0..self.processors[i].get_notes_events().len() {
-                if self.processors[i].get_notes_events()[k].tick == self.data.tick {
-                    if self.processors[i].get_notes_events()[k].first == NOTE_OFF as u8 {
-                        let note_id = self.processors[i].get_notes_events()[k].second;
-                        self.processors[i].note_off(note_id);
+                let note_event = self.processors[i].get_notes_events()[k];
+                
+                let record_recently = (self.stamp - note_event.stamp_record) < self.data.nb_ticks() / 2;
+                if note_event.tick_off != -1 && !record_recently {
+                    if note_event.tick_on == self.data.tick {
+                        self.processors[i].note_on(note_event.note_id, 1.0);
                     }
-                    if self.processors[i].get_notes_events()[k].first == NOTE_ON as u8 {
-                        let note_id = self.processors[i].get_notes_events()[k].second;
-                        self.processors[i].note_on(note_id, 1.0);
+                    if note_event.tick_off == self.data.tick {
+                        self.processors[i].note_off(note_event.note_id);
                     }
                 }
             }
@@ -138,16 +126,34 @@ impl Sequencer {
             self.play_recorded_note_events();
 
             self.data.tick += 1;
+            self.stamp += 1;
 
-            if self.data.tick >= self.data.bars * self.data.ticks_per_quarter_note * 4 {
+            if self.data.tick >= self.data.nb_ticks() {
                 self.data.tick = 0;
             }
         }
-        self.handle_incoming_note_events();
     }
 
     pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         self.data.process_messages();
+
+        if self.data.undo_last_session {
+            if self.data.instrument_selected_id < self.processors.len() {
+                let mut last_session = 0;
+                let note_events = &mut self.processors[self.data.instrument_selected_id].get_notes_events();
+                for note_event in note_events.iter() {
+                    if note_event.record_session > last_session {
+                        last_session = note_event.record_session;
+                    }
+                }
+
+                while note_events.iter()
+                    .position(|&n| n.record_session == last_session)
+                    .map(|e| note_events.remove(e)).is_some() {}
+                
+                self.processors[self.data.instrument_selected_id].all_note_off();
+            }
+        }
 
         let mut i : usize = 0;
         for instrument in self.data.insruments.iter() {
@@ -155,14 +161,33 @@ impl Sequencer {
             i += 1;
         }
 
+        let bpm_has_bipped = self.data.bpm_has_biped;
+        
         if self.data.is_playing {
-            let bpm_has_bipped = self.data.bpm_has_biped;
             self.update();
-            for sender in self.audio_state_senders.iter() {
+        }
+
+        if self.data.kill_all_notes {
+            for processor in self.processors.iter_mut() {
+                processor.all_note_off();
+            }
+            self.data.kill_all_notes = false;
+        }
+        for sender in self.audio_state_senders.iter() {
+            if self.data.is_playing {
                 sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
                 if !bpm_has_bipped && self.data.bpm_has_biped {
                     sender.send(SequencerDataMessage::SetBpmHasBiped(self.data.bpm_has_biped)).unwrap();
                 }
+            }
+            if self.has_new_notes || self.data.undo_last_session {
+                let idx = self.data.instrument_selected_id;
+                if self.data.instrument_selected_id < self.processors.len() {
+                    let note_events = self.processors[idx].get_notes_events().clone();
+                    sender.send(SequencerDataMessage::SetMidiMessagesInstrument(note_events)).unwrap();
+                }
+                self.has_new_notes = false;
+                self.data.undo_last_session = false;
             }
         }
 
@@ -189,15 +214,20 @@ impl Sequencer {
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_on(note_id, 1.0);
-            if self.data.is_recording {
-                self.fifo_queue_midi_message.write(
-                    MidiMessage {
-                        first: NOTE_ON,
-                        second: note_id,
-                        third: 127,
-                        tick: self.data.tick
-                    }
-                );
+            if self.data.is_recording && self.data.is_playing {
+                let quantize_tick = self.quantize_tick();
+
+                self.processors[idx].add_notes_event(NoteEvent {
+                    tick_on: quantize_tick,
+                    tick_off: -1,
+                    note_id,
+                    record_session: self.data.record_session,
+                    stamp_record: self.stamp,
+                });
+                self.processors[idx].get_notes_events()
+                    .sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());
+
+                self.has_new_notes = true;
             }
         }
     }
@@ -206,15 +236,30 @@ impl Sequencer {
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
             self.processors[idx].note_off(note_id);
-                if self.data.is_recording {
-                    self.fifo_queue_midi_message.write(
-                        MidiMessage {
-                            first: NOTE_OFF,
-                            second: note_id,
-                            third: 127,
-                            tick: self.data.tick
+                if self.data.is_recording && self.data.is_playing {
+                
+                    let quantize_tick = self.quantize_tick();
+
+                    let note_events = self.processors[idx].get_notes_events();
+                    for note_event in note_events.iter_mut() {
+                        if note_event.note_id != note_id {
+                            continue;
                         }
-                    );
+                        if note_event.tick_off != -1 {
+                            continue;
+                        }
+                        note_event.tick_off = quantize_tick;
+                      
+                        if note_event.tick_off == note_event.tick_on {
+                            note_event.tick_off += 120;
+                            if note_event.tick_off > self.data.nb_ticks() - 1 {
+                                note_event.tick_off = self.data.nb_ticks() - 1;
+                            }
+                        }
+                        break;
+                    }
+
+                    self.has_new_notes = true;
                 }
         }
     }
@@ -225,6 +270,27 @@ impl Sequencer {
                 self.processors[i].clear_notes_events();
             }
         }
+    }
+
+    fn quantize_tick(&self) -> i32 {
+        if self.data.get_quantize() == -1 {
+            if self.data.tick >= self.data.end_quantize_adjust() {
+                return 0;
+            }
+            return self.data.tick;
+        }
+        let current_tick = self.data.tick;
+        let interval = self.data.quantize_interval();
+        let lower = current_tick / interval;
+        let offset = current_tick % interval;
+        let highest = offset / (interval / 2);
+
+        let quantize_tick = (lower + highest) * interval;
+
+        if quantize_tick >= self.data.end_quantize_adjust() {
+            return 0;
+        }
+        return quantize_tick;
     }
 
 }

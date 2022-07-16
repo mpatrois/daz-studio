@@ -1,9 +1,8 @@
 use crate::processor::Processor;
-use crate::midimessage::MidiMessage;
+use crate::midimessage::NoteEvent;
 use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
 use crate::sampler::sampler_preset::SamplerPreset;
-// use crate::sampler::sampler_preset::SampleInfo;
 use crate::preset::Preset;
 
 const MAX_NOTES : usize = 32;
@@ -17,7 +16,7 @@ pub struct Sampler {
     pub sustain: f32,
     pub release: f32,
     pub id: usize,
-    pub note_events: Vec<MidiMessage>,
+    pub note_events: Vec<NoteEvent>,
     pub im_armed: bool,
     presets: Vec<SamplerPreset>,
     preset_id: usize
@@ -93,6 +92,12 @@ impl Processor for Sampler {
         }
     }
 
+    fn all_note_off(&mut self) {
+        for i in 0..self.voices.len() {
+            self.voices[i].stop_note();
+        }
+    }
+
     fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
@@ -117,11 +122,11 @@ impl Processor for Sampler {
         self.note_events.clear();
     }
 
-    fn get_notes_events(&mut self) -> &Vec<MidiMessage> {
-        return &self.note_events;
+    fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
+        return &mut self.note_events;
     }
 
-    fn add_notes_event(&mut self, midi_message: MidiMessage) {
+    fn add_notes_event(&mut self, midi_message: NoteEvent) {
         self.note_events.push(midi_message);
     }
 
