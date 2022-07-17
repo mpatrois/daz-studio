@@ -141,7 +141,7 @@ impl SynthesizerVoice {
                     out = op3 + op2 + op1 + op0;
                 }
 
-                out = self.biquad_filter.run(out);
+                // out = self.biquad_filter.run(out);
 
                 outputs[idx] += out;
                 outputs[idx + 1] += out;

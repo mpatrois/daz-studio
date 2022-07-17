@@ -99,12 +99,12 @@ impl Synthesizer {
 
             oscx_coarse: [0.5, 0.5, 3.98, 4.],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-1.0), db_to_gain(-1.0)],
-            oscx_osc_type: [OSC_OFF, OSC_OFF, SAW_ANALOGIC_64, SAW_ANALOGIC_64],
+            oscx_osc_type: [OSC_OFF, OSC_OFF, OSC_OFF, SAW_ANALOGIC_64],
             oscx_phase_offset: [0.0, 0.0, 0., 0.],
             oscx_feedback: [0.0, 0., 0., 0.],
             oscx_adsr_attack: [0.0128, 0.00092, 0.00243, 0.00243],
             oscx_adsr_decay: [3.38, 0.969, 0., 0.],
-            oscx_adsr_sustain: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-10.), db_to_gain(-2.)],
+            oscx_adsr_sustain: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-2.)],
             oscx_adsr_release: [0.05, 0.2, 0.05, 0.05],
         });
         

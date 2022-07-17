@@ -22,6 +22,7 @@ pub enum Message {
     NextQuantize,
     PreviousQuantize,
     SetIsRecording(bool),
+    DumpNotes,
     SetCurrentInstrumentSelected(usize),
     UndoLastSession,
 }
@@ -167,6 +168,18 @@ impl SequencerData {
                 },
                 Message::UndoLastSession => {
                     self.undo_last_session = true;
+                },
+                Message::DumpNotes => {
+                    for intrument in self.insruments.iter()  {
+                        println!("Instrument: {}", intrument.name);
+                        for noteEvent in intrument.paired_notes.iter() {
+                            println!("{{");
+                            println!("note_id: {},", noteEvent.note_id);
+                            println!("tick_on: {},", noteEvent.tick_on);
+                            println!("tick_off: {},", noteEvent.tick_off);
+                            println!("}},");
+                        }
+                    }
                 },
                 _ => (),
             }

@@ -172,6 +172,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         Keycode::Left => broadcaster.send(Message::PreviousPreset),
                         Keycode::Right => broadcaster.send(Message::NextPreset),
                         Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
+                        Keycode::S => broadcaster.send(Message::DumpNotes),
                         Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
                         Keycode::C => {
                             broadcaster.send(Message::PreviousQuantize);

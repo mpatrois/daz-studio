@@ -62,11 +62,158 @@ impl Sequencer {
         sequencer.compute_elapsed_time_each_render();
 
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 2)));
-        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
+        // sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
+        // sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
+        // sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
 
-        sequencer.processors[0].set_is_armed(true);
+        // sequencer.processors[0].set_is_armed(true);
+
+        // sequencer.processors[0].add_notes_event({
+        //     {
+            
+        // })
+        sequencer.processors[0].add_notes_event(NoteEvent {
+            note_id: 74,
+            tick_on: 426,
+            tick_off: 880,
+            record_session:-1,
+            stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+            note_id: 91,
+            tick_on: 856,
+            tick_off: 1423,
+            record_session:-1,
+            stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 87,
+        tick_on: 1391,
+        tick_off: 1869,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 86,
+        tick_on: 1821,
+        tick_off: 2088,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 87,
+        tick_on: 2056,
+        tick_off: 2315,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 86,
+        tick_on: 2258,
+        tick_off: 2542,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 84,
+        tick_on: 2477,
+        tick_off: 2720,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 86,
+        tick_on: 2704,
+        tick_off: 3037,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 84,
+        tick_on: 3012,
+        tick_off: 3207,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 86,
+        tick_on: 3174,
+        tick_off: 3815,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 82,
+        tick_on: 4066,
+        tick_off: 4552,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 84,
+        tick_on: 4512,
+        tick_off: 4739,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 82,
+        tick_on: 4706,
+        tick_off: 5023,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 84,
+        tick_on: 4901,
+        tick_off: 5509,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 86,
+        tick_on: 5404,
+        tick_off: 5987,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 79,
+        tick_on: 5906,
+        tick_off: 6409,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 82,
+        tick_on: 6320,
+        tick_off: 6587,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 84,
+        tick_on: 6514,
+        tick_off: 6766,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 82,
+        tick_on: 6676,
+        tick_off: 6976,
+        record_session:-1,
+        stamp_record: 0
+        });
+        sequencer.processors[0].add_notes_event(NoteEvent {
+        note_id: 79,
+        tick_on: 6871,
+        tick_off: 7357,
+        record_session:-1,
+        stamp_record: 0
+        });
+
+        let note_events = sequencer.processors[0].get_notes_events().clone();
 
         for processor in sequencer.processors.iter() {
             sequencer.data.insruments.push(InstrumentData {
@@ -74,7 +221,7 @@ impl Sequencer {
                 volume: 1.0,
                 current_preset_id: processor.get_current_preset_id(),
                 presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
-                paired_notes: Vec::new()
+                paired_notes: note_events.clone(),
             });
         }
         return (sequencer, sender);
@@ -101,7 +248,7 @@ impl Sequencer {
                 let note_event = self.processors[i].get_notes_events()[k];
                 
                 let record_recently = (self.stamp - note_event.stamp_record) < self.data.nb_ticks() / 2;
-                if note_event.tick_off != -1 && !record_recently {
+                if note_event.tick_off != -1 && (!record_recently || note_event.record_session == -1) {
                     if note_event.tick_on == self.data.tick {
                         self.processors[i].note_on(note_event.note_id, 1.0);
                     }
