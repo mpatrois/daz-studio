@@ -1,0 +1,10 @@
+hdmi_group=2
+hdmi_mode=87
+hdmi_cvt=320 240 60 6 0 0 0
+hdmi_force_hotplug=1
+disable_overscan=1
+dtoverlay=pi3-disable-bt
+dtparam=act_led_trigger=none
+dtparam=act_led_activelow=on
+
+dtoverlay=hifiberry-dac
