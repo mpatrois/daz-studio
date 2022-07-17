@@ -3,8 +3,8 @@ use crate::processor::Processor;
 use crate::synthesizer::synthesizervoice::SynthesizerVoice;
 
 use crate::synthesizer::operator::SINE;
-use crate::synthesizer::operator::SAW_ANALOGIC_4;
 use crate::synthesizer::operator::SAW_ANALOGIC_64;
+use crate::synthesizer::operator::SAW_ANALOGIC_4;
 use crate::synthesizer::operator::SAW_DIGITAL;
 use crate::synthesizer::operator::OSC_OFF;
 use crate::synthesizer::synthesizer_preset::SynthesizerPreset;
@@ -15,7 +15,7 @@ use crate::decibels::db_to_gain;
 use biquad::*;
 use biquad::Type;
 
-const MAX_VOICES : usize = 8;
+const MAX_VOICES : usize = 1;
 
 pub struct Synthesizer {
     voices: Vec<SynthesizerVoice>,
@@ -93,13 +93,13 @@ impl Synthesizer {
             name: "G-FUNK lead".to_string(),
             algorithm: 11,
             nb_voices: 1,
-            filter_type: Type::LowPass,
+            filter_type: Type::BandPass,
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
 
-            oscx_coarse: [0.5, 0.5, 3.98, 2.],
+            oscx_coarse: [0.5, 0.5, 3.98, 4.],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-1.0), db_to_gain(-1.0)],
-            oscx_osc_type: [OSC_OFF, OSC_OFF, SAW_DIGITAL, SAW_DIGITAL],
+            oscx_osc_type: [OSC_OFF, OSC_OFF, SAW_ANALOGIC_64, SAW_ANALOGIC_64],
             oscx_phase_offset: [0.0, 0.0, 0., 0.],
             oscx_feedback: [0.0, 0., 0., 0.],
             oscx_adsr_attack: [0.0128, 0.00092, 0.00243, 0.00243],
@@ -118,39 +118,57 @@ impl Processor for Synthesizer {
     fn get_name(&self) -> String { "Synthesizer".to_string() }
 
     fn note_on(&mut self, midi_note: u8, velocity: f32) {
-        if self.nb_actives_notes < MAX_VOICES - 1 {
-            let note_to_active = self.nb_actives_notes as usize;
 
-            let frequency = f32::powf(2.0, (((midi_note) as i32 - 69) as f32 / 12.0) as f32) * 440.0;
+        let frequency = f32::powf(2.0, (((midi_note) as i32 - 69) as f32 / 12.0) as f32) * 440.0;
 
-            let preset = self.presets[self.preset_id].clone();
-            
-            self.voices[note_to_active].algorithm = preset.algorithm;
-
-            self.voices[note_to_active].filter_type = preset.filter_type;
-            self.voices[note_to_active].filter_f0 = preset.filter_f0;
-            self.voices[note_to_active].filter_q_value = preset.filter_q_value;
-
-            for operator_idx in 0..self.voices[note_to_active].operators.len() {
-                self.voices[note_to_active].operators[operator_idx].init(
-                    self.sample_rate, 
-                    preset.oscx_coarse[operator_idx] * frequency, 
-                    preset.oscx_level[operator_idx], 
-                    preset.oscx_osc_type[operator_idx],
-                    preset.oscx_phase_offset[operator_idx], 
-                    preset.oscx_feedback[operator_idx],
-                );
-                self.voices[note_to_active].operators[operator_idx].adsr.set_adsr(
-                    preset.oscx_adsr_attack[operator_idx],
-                    preset.oscx_adsr_decay[operator_idx],
-                    preset.oscx_adsr_sustain[operator_idx],
-                    preset.oscx_adsr_release[operator_idx],
-                );
+        if self.voices.len() == 1 && self.voices[0].active {
+            // println!("here");
+            self.voices[0].note_id = midi_note;
+            self.voices[0].target_frequency = frequency;
+            // self.voices[0].target_frequency_step = (self.voices[0].target_frequency - self.voices[0].frequency) / 1000.;
+            // println!("{} {} {}", self.voices[0].frequency, self.voices[0].target_frequency, self.voices[0].target_frequency_step);
+            for i in 0..self.voices[0].operators.len() {
+            //     self.voices[0].operators[i].adsr.reset();
+                self.voices[0].operators[i].adsr.note_on();
             }
-            
-            self.voices[note_to_active].start_note(midi_note, velocity);
-            self.nb_actives_notes += 1;
+        } else {
+            if self.nb_actives_notes < MAX_VOICES {
+                let note_to_active = self.nb_actives_notes as usize;
+
+                let preset = self.presets[self.preset_id].clone();
+                
+                self.voices[note_to_active].algorithm = preset.algorithm;
+    
+                self.voices[note_to_active].filter_type = preset.filter_type;
+                self.voices[note_to_active].filter_f0 = preset.filter_f0;
+                self.voices[note_to_active].filter_q_value = preset.filter_q_value;
+                
+                self.voices[note_to_active].frequency = frequency;
+                self.voices[note_to_active].target_frequency = frequency;
+    
+                for operator_idx in 0..self.voices[note_to_active].operators.len() {
+                    self.voices[note_to_active].target_frequency_step = 0.;
+                    self.voices[note_to_active].operators[operator_idx].init(
+                        self.sample_rate, 
+                        preset.oscx_coarse[operator_idx] * frequency, 
+                        preset.oscx_level[operator_idx], 
+                        preset.oscx_osc_type[operator_idx],
+                        preset.oscx_phase_offset[operator_idx], 
+                        preset.oscx_feedback[operator_idx],
+                    );
+                    self.voices[note_to_active].operators[operator_idx].adsr.set_adsr(
+                        preset.oscx_adsr_attack[operator_idx],
+                        preset.oscx_adsr_decay[operator_idx],
+                        preset.oscx_adsr_sustain[operator_idx],
+                        preset.oscx_adsr_release[operator_idx],
+                    );
+                }
+                
+                self.voices[note_to_active].start_note(midi_note, velocity);
+                self.nb_actives_notes += 1;
+            }
         }
+
     }
 
     fn note_off(&mut self, midi_note: u8) {

@@ -109,18 +109,18 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
     let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
 
     let key_board_notes = HashMap::from([
-        (Keycode::A, 52),
-        (Keycode::Z, 53),
-        (Keycode::E, 54),
-        (Keycode::R, 55),
-        (Keycode::T, 56),
-        (Keycode::Y, 57),
-        (Keycode::U, 58),
-        (Keycode::I, 59),
-        (Keycode::O, 60),
-        (Keycode::P, 61),
-        (Keycode::Q, 62),
-        (Keycode::S, 63),
+        (Keycode::A, 52 + 12 * 2),
+        (Keycode::Z, 53 + 12 * 2),
+        (Keycode::E, 54 + 12 * 2),
+        (Keycode::R, 55 + 12 * 2),
+        (Keycode::T, 56 + 12 * 2),
+        (Keycode::Y, 57 + 12 * 2),
+        (Keycode::U, 58 + 12 * 2),
+        (Keycode::I, 59 + 12 * 2),
+        (Keycode::O, 60 + 12 * 2),
+        (Keycode::P, 61 + 12 * 2),
+        (Keycode::Q, 62 + 12 * 2),
+        (Keycode::S, 63 + 12 * 2),
     ]);
 
     let mut main_ui = ui::MainUI  {

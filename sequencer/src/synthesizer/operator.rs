@@ -47,8 +47,8 @@ impl Operator {
         self.value = self.oscillate(self.current_angle) * self.adsr.tick() * self.volume;
         self.current_angle += self.angular_speed;
 
-        if self.current_angle > 2.0 * std::f32::consts::PI {
-            self.current_angle -= 2.0 * std::f32::consts::PI;
+        if self.current_angle >= 2. * std::f32::consts::PI {
+            self.current_angle -= 2. * std::f32::consts::PI;
         }
 
         if self.feedback == 0.0 {
@@ -62,7 +62,7 @@ impl Operator {
     pub fn tick_modulated(&mut self, modulation: f32) -> f32 {
         self.value = self.oscillate(self.current_angle + modulation) * self.adsr.tick() * self.volume;
         self.current_angle += self.angular_speed;
-        
+
         if self.current_angle > 2.0 * std::f32::consts::PI {
             self.current_angle -= 2.0 * std::f32::consts::PI;
         }
@@ -81,6 +81,11 @@ impl Operator {
        self.feedback = feedback;
        self.time = 0.;
        self.time_step = 1. / sample_rate;
+    }
+
+    pub fn change_frequency_fly(&mut self, new_frequency: f32) {
+        self.angular_speed = (new_frequency / 48000.) * 2.0 * std::f32::consts::PI;
+        self.frequency = new_frequency;
     }
 
     pub fn oscillate(&mut self, phase: f32) -> f32 {

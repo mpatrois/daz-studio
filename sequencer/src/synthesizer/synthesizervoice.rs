@@ -15,6 +15,9 @@ pub const OP_D : usize = 0;
 #[derive(Copy, Clone)]
 pub struct SynthesizerVoice {
     pub active: bool,
+    pub frequency: f32,
+    pub target_frequency: f32,
+    pub target_frequency_step: f32,
     pub note_id: u8,
     pub operators: [Operator; NB_OPERATORS],
     pub sample_rate: f32,
@@ -35,8 +38,11 @@ impl SynthesizerVoice {
         let biquad_filter = DirectForm1::<f32>::new(coeffs);
 
         return SynthesizerVoice {
-            active: true,
+            active: false,
             note_id: 0,
+            frequency: 0.,
+            target_frequency: 0.,
+            target_frequency_step: 0.,
             operators: [
                 Operator::new(sample_rate, SINE),
                 Operator::new(sample_rate, SINE),
@@ -72,62 +78,81 @@ impl SynthesizerVoice {
     }
 
     pub fn render_next_block(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) { 
-        let mut out = 0.0;
-        let mut idx = 0;
-        while idx < nb_channels * num_samples {
+            let mut out = 0.0;
+            let mut idx = 0;
+            // println!("{}", self.frequency);
 
-            if self.algorithm == 1 {
-                self.operators[OP_D].tick();
-                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
-                out = op0;
+            // if self.frequency != self.target_frequency {
+            let incr = (self.target_frequency - self.frequency) / 10.;
+            self.frequency += incr;
+
+            if (self.target_frequency - self.frequency).abs() <= 0.001 {
+                self.frequency = self.target_frequency;
             }
 
-            if self.algorithm == 5 {
-                self.operators[OP_D].tick();
-                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_C].value);
-                out = op1 + op0;
+            self.operators[OP_D].change_frequency_fly(self.frequency);
+            self.operators[OP_C].change_frequency_fly(self.frequency);
+            self.operators[OP_B].change_frequency_fly(self.frequency);
+            self.operators[OP_A].change_frequency_fly(self.frequency);
+                // println!("{} {} {}", idx, self.frequency, self.target_frequency);
+            // }
+
+            // println!("{}", self.frequency);
+
+            while idx < nb_channels * num_samples {
+
+                if self.algorithm == 1 {
+                    self.operators[OP_D].tick();
+                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                    self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                    let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
+                    out = op0;
+                }
+
+                if self.algorithm == 5 {
+                    self.operators[OP_D].tick();
+                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                    let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                    let op0 = self.operators[OP_A].tick_modulated(self.operators[OP_C].value);
+                    out = op1 + op0;
+                }
+
+                if self.algorithm == 6 {
+                    self.operators[OP_D].tick();
+                    self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                    let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
+                    let op0 = self.operators[OP_A].tick();
+                    out = op0 + op1;
+                }
+
+                if self.algorithm == 8 {
+                    self.operators[OP_D].tick();
+                    let op_c = self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
+                    self.operators[OP_B].tick();
+                    let op_a = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
+                    out = op_a + op_c;
+                }
+
+                if self.algorithm == 11 {
+                    let op3 = self.operators[OP_D].tick();
+                    let op2 = self.operators[OP_C].tick();
+                    let op1 = self.operators[OP_B].tick();
+                    let op0 = self.operators[OP_A].tick();
+                    out = op3 + op2 + op1 + op0;
+                }
+
+                out = self.biquad_filter.run(out);
+
+                outputs[idx] += out;
+                outputs[idx + 1] += out;
+
+                idx += 2;
             }
-
-            if self.algorithm == 6 {
-                self.operators[OP_D].tick();
-                self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                let op1 = self.operators[OP_B].tick_modulated(self.operators[OP_C].value);
-                let op0 = self.operators[OP_A].tick();
-                out = op0 + op1;
-            }
-
-            if self.algorithm == 8 {
-                self.operators[OP_D].tick();
-                let op_c = self.operators[OP_C].tick_modulated(self.operators[OP_D].value);
-                self.operators[OP_B].tick();
-                let op_a = self.operators[OP_A].tick_modulated(self.operators[OP_B].value);
-                out = op_a + op_c;
-            }
-
-            if self.algorithm == 11 {
-                let op3 = self.operators[OP_D].tick();
-                let op2 = self.operators[OP_C].tick();
-                let op1 = self.operators[OP_B].tick();
-                let op0 = self.operators[OP_A].tick();
-                out = op3 + op2 + op1 + op0;
-            }
-
-            out = self.biquad_filter.run(out);
-
-            outputs[idx] += out;
-            outputs[idx + 1] += out;
-
-            idx += 2;
-        }
-        
-        if out.abs() <= 0.000000000001 {
             
-            self.active = false;
-        }
+            if out.abs() <= 0.000000000001 {
+
+                self.active = false;
+            }
     }
 
     pub fn is_ended(&self) -> bool {

@@ -61,8 +61,8 @@ impl Sequencer {
 
         sequencer.compute_elapsed_time_each_render();
 
+        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 2)));
         sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 0)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
         sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
 
