@@ -1,4 +1,6 @@
+
 const MINUS_INFINITY_DB: f32 = -100.0;
+pub const VOLUME_OFF: f32 = MINUS_INFINITY_DB;
 
 pub fn db_to_gain (decibels: f32) -> f32
 {

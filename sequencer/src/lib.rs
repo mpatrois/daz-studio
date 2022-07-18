@@ -3,17 +3,20 @@ pub mod oscillator;
 pub mod synthesizer;
 pub mod adsr;
 pub mod decibels;
+pub mod utils;
 pub mod midimessage;
 pub mod processor;
 pub mod fifoqueue;
 pub mod sampler;
+pub mod mood;
 pub mod noise;
 pub mod preset;
+pub mod fx;
 pub mod sequencer_data;
 
 use crate::processor::Processor;
+use crate::mood::mood::Mood;
 use crate::metronome::metronome::Metronome;
-use crate::synthesizer::synthesizer::Synthesizer;
 use crate::sampler::sampler::Sampler;
 use crate::midimessage::NoteEvent;
 use crate::sequencer_data::SequencerData;
@@ -61,14 +64,13 @@ impl Sequencer {
 
         sequencer.compute_elapsed_time_each_render();
 
-        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 0)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 1, 0)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 2, 1)));
-        sequencer.processors.push(Box::new(Synthesizer::new(sample_rate, 3, 2)));
+        sequencer.processors.push(Box::new(Mood::new(sample_rate, 0)));
+        sequencer.processors.push(Box::new(Sampler::new(sample_rate, 1)));
+        sequencer.processors.push(Box::new(Mood::new(sample_rate, 2)));
+        sequencer.processors.push(Box::new(Mood::new(sample_rate, 3)));
 
-        sequencer.processors[0].set_is_armed(true);
-
-        for processor in sequencer.processors.iter() {
+        for processor in sequencer.processors.iter_mut() {
+            processor.prepare(sample_rate, buffer_size, 2);
             sequencer.data.insruments.push(InstrumentData {
                 name: processor.get_name(),
                 volume: 1.0,
@@ -173,6 +175,21 @@ impl Sequencer {
             }
             self.data.kill_all_notes = false;
         }
+
+        for s in 0..(nb_channels * num_samples) {
+             outputs[s] = 0.0;
+        }
+
+        self.metronome.process(outputs, num_samples, nb_channels);
+        
+        for i in 0..self.processors.len() {
+            self.processors[i].process(outputs, num_samples, nb_channels);
+        }
+
+        for s in 0..(nb_channels * num_samples) {
+            outputs[s] *= self.data.volume;
+        }
+
         for sender in self.audio_state_senders.iter() {
             if self.data.is_playing {
                 sender.send(SequencerDataMessage::SetTick(self.data.tick)).unwrap();
@@ -189,20 +206,7 @@ impl Sequencer {
                 self.has_new_notes = false;
                 self.data.undo_last_session = false;
             }
-        }
-
-        for s in 0..(nb_channels * num_samples) {
-             outputs[s] = 0.0;
-        }
-
-        self.metronome.process(outputs, num_samples, nb_channels);
-        
-        for i in 0..self.processors.len() {
-            self.processors[i].process(outputs, num_samples, nb_channels);
-        }
-
-        for s in 0..(nb_channels * num_samples) {
-            outputs[s] *= self.data.volume;
+            sender.send(SequencerDataMessage::SetWaveFormData(outputs.to_vec())).unwrap();
         }
     }
 
@@ -261,14 +265,6 @@ impl Sequencer {
 
                     self.has_new_notes = true;
                 }
-        }
-    }
-
-    pub fn clear_notes_events(&mut self, clear_all_instruments: bool) {
-        for i in 0..self.processors.len() {
-            if i == self.data.instrument_selected_id || clear_all_instruments {
-                self.processors[i].clear_notes_events();
-            }
         }
     }
 

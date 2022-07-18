@@ -5,11 +5,13 @@ use crate::noise::NOISE_TAB_SIZE;
 pub const SINE : u8 = 0;
 pub const TRIANGLE : u8 = 1;
 pub const SQUARE : u8 = 2;
-pub const SAW_ANALOGIC_4 : u8 = 3;
-pub const SAW_ANALOGIC_64 : u8 = 4;
-pub const SAW_DIGITAL : u8 = 5;
-pub const NOISE : u8 = 6;
-pub const OSC_OFF : u8 = 7;
+pub const SQUARE_ANALOG : u8 = 3;
+pub const SAW_ANALOGIC_4 : u8 = 4;
+pub const SAW_ANALOGIC_64 : u8 = 5;
+pub const SAW_ANALOGIC_256 : u8 = 6;
+pub const SAW_DIGITAL : u8 = 7;
+pub const NOISE : u8 = 8;
+pub const OSC_OFF : u8 = 9;
 
 #[derive(Copy, Clone)]
 pub struct Operator {
@@ -100,6 +102,17 @@ impl Operator {
             return -1.0;
         }
 
+        if self.osc_type == SQUARE_ANALOG {
+            let mut out = 0.;
+            let mut n = 1.0;
+            for _ in 1..256
+            {
+                out += (1. / n) * (n * phase).sin();
+                n += 2.;
+            }
+            return 4. / std::f32::consts::PI * out;
+        }
+
         if self.osc_type == SAW_ANALOGIC_4 {
             let mut out = 0.;
             for n in 1..4
@@ -112,6 +125,15 @@ impl Operator {
         if self.osc_type == SAW_ANALOGIC_64 {
             let mut out = 0.;
             for n in 1..64
+            {
+                out += (n as f32 * phase).sin() / n as f32;
+            }
+            return out * 2.0 / std::f32::consts::PI;
+        }
+    
+        if self.osc_type == SAW_ANALOGIC_256 {
+            let mut out = 0.;
+            for n in 1..256
             {
                 out += (n as f32 * phase).sin() / n as f32;
             }

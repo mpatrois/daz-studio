@@ -25,13 +25,51 @@ pub const SCREEN_HEIGHT: u32 = 240;
 
 pub const BACKGROUND_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
 
-pub const INSTRUMENT_COLOR : Rgb888  = Rgb888::new(234, 224, 213);
+pub const INSTRUMENT_COLOR : Rgb888 = Rgb888::new(234, 224, 213);
+pub const WAVEFORM_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
 
 pub struct MainUI {
    pub metronome_left: bool,
 }
 
 impl MainUI {
+
+    pub fn draw_wave_form(
+        &mut self, 
+        data_ui: &mut SequencerData, 
+        display: &mut SimulatorDisplay<Rgb888>, 
+        box_draw: Rectangle)  -> Result<(), Infallible> {
+
+        let fill_line = PrimitiveStyleBuilder::new()
+            .stroke_color(WAVEFORM_COLOR)
+            .stroke_width(1)
+            .build();
+
+        if data_ui.audio_wave_form.len() > 0 {
+            let size_sample = box_draw.size.width as f32 / data_ui.audio_wave_form.len() as f32;
+
+            let half_box = box_draw.size.height / 2;
+            
+            let mut i = 0;
+            for _ in 0..data_ui.audio_wave_form.len() / 2 {
+
+                let x1 = box_draw.top_left.x + (i as f32 * size_sample) as i32;
+                let x2 = box_draw.top_left.x + ((i+2) as f32 * size_sample) as i32;
+                let audio1 = half_box as f32 - data_ui.audio_wave_form[i] * box_draw.size.height as f32;
+                let audio2 = half_box as f32 - data_ui.audio_wave_form[i] * box_draw.size.height as f32;
+
+                Line::new(
+                    Point::new(x1, audio1 as i32),
+                    Point::new(x2, audio2 as i32)
+                ).into_styled(fill_line)
+                .draw(display)?;
+
+                i += 2;
+            }
+        }
+        Ok({})
+    }
+
     pub fn update(&mut self,
         data_ui: &mut SequencerData,
         display: &mut SimulatorDisplay<Rgb888>,
@@ -246,6 +284,8 @@ impl MainUI {
     
             }
         }
+
+        self.draw_wave_form(data_ui, display, Rectangle::new(Point::new(SCREEN_WIDTH as i32 / 2 - 50 / 2, 0), Size::new(50, 30)))?;
     
         Ok(())
     }
