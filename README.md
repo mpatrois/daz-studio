@@ -37,7 +37,7 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
       - [x] ADSR
       - [ ] Fixed frequency
       - [x] Coarse
-      - [ ] Fine Tuning
+      - [x] Fine Tuning
       - [x] Level
       - [x] Phase offset
       - [x] Feedback
@@ -47,21 +47,21 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
       - [x] Biquad filters
   - Modulation
       - [ ] LFO's
-      - [ ] All pperator algorithms
+      - [ ] All operator algorithms
   - [x] ADSR
   - [x] Polyphony
-  - [ ] Monophony with glide <3
+  - [x] Monophony with glide <3
 - Sample based synth 
     - [x] Load sample from files
     - [x] Play Samples
 - Effects
-    - [ ] Reverb
+    - [x] Reverb
     - [ ] Compression
     - [ ] Distortion
     - [ ] Delay
 - Tools
     - [ ] Tap tempo
-    - [ ] Quantize
+    - [x] Quantize
 - UI/Controls
     - [ ] Play/Stop sequencer
     - [x] Toogle record mode
