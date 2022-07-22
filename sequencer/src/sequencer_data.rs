@@ -14,6 +14,7 @@ pub enum Message {
     SetMetronomeActive(bool),
     SetBpmHasBiped(bool),
     SetMidiMessagesInstrument(Vec<NoteEvent>),
+    SetWaveFormData(Vec<f32>),
     NextInstrument,
     PreviousInstrument,
     PlayStop,
@@ -66,6 +67,7 @@ pub struct SequencerData {
     pub record_session: i32,
     pub undo_last_session: bool,
     pub kill_all_notes: bool,
+    pub audio_wave_form: Vec<f32>,
 }
 
 impl SequencerData {
@@ -90,6 +92,7 @@ impl SequencerData {
             record_session: 0,
             undo_last_session: false,
             kill_all_notes: false,
+            audio_wave_form: Vec::new()
         };
         data.compute_tick_time();
         (data, sender)
@@ -167,6 +170,9 @@ impl SequencerData {
                 },
                 Message::UndoLastSession => {
                     self.undo_last_session = true;
+                },
+                Message::SetWaveFormData(audio_wave_form) => {
+                    self.audio_wave_form = audio_wave_form;
                 },
                 _ => (),
             }

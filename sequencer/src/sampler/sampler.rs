@@ -115,31 +115,12 @@ impl Processor for Sampler {
         }
     }
 
-    fn clear_notes_events(&mut self) {
-        for i in 0..self.nb_actives_notes {
-            self.voices[i].stop_note();
-        }
-        self.note_events.clear();
-    }
-
     fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
         return &mut self.note_events;
     }
 
     fn add_notes_event(&mut self, midi_message: NoteEvent) {
         self.note_events.push(midi_message);
-    }
-
-    fn is_armed(&self) -> bool {
-        return self.im_armed;
-    }
-
-    fn set_is_armed(&mut self, is_armed: bool) {
-        self.im_armed = is_armed;
-    }
-
-    fn get_id(&self) -> usize {
-        return self.id;
     }
 
     fn get_current_preset_id(&self) -> usize {
@@ -156,6 +137,10 @@ impl Processor for Sampler {
             presets.push(Box::new(preset.clone()));
         }
         return presets;
+    }
+
+    fn prepare(&mut self, _sample_rate: f32, _num_samples: usize, _nb_channels: usize) {
+        
     }
     
 }

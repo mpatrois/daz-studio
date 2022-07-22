@@ -4,7 +4,6 @@ use crate::synthesizer::synthesizervoice::SynthesizerVoice;
 
 use crate::synthesizer::operator::SINE;
 use crate::synthesizer::operator::SAW_ANALOGIC_4;
-use crate::synthesizer::operator::SAW_ANALOGIC_64;
 use crate::synthesizer::operator::SAW_DIGITAL;
 use crate::synthesizer::operator::OSC_OFF;
 use crate::synthesizer::synthesizer_preset::SynthesizerPreset;
@@ -22,7 +21,6 @@ pub struct Synthesizer {
     nb_actives_notes: usize,
     pub id: usize,
     pub note_events: Vec<NoteEvent>,
-    im_armed: bool,
     sample_rate: f32,
     presets: Vec<SynthesizerPreset>,
     preset_id: usize,
@@ -42,7 +40,6 @@ impl Synthesizer {
             nb_actives_notes: 0,
             id: id,
             note_events: Vec::with_capacity(100),
-            im_armed: false,
             sample_rate: sample_rate,
             presets: Vec::new(),
             preset_id: preset_id
@@ -60,14 +57,14 @@ impl Synthesizer {
             oscx_coarse: [0.5, 0.5, 1.0, 0.5],
             oscx_level: [db_to_gain(-25.), db_to_gain(-20.), db_to_gain(-12.0), db_to_gain(0.0)],
             oscx_osc_type: [SINE, SINE, SINE, SAW_ANALOGIC_4],
-            oscx_phase_offset: [0.0, 0.7, 0., db_to_gain(0.0)],
+            oscx_phase_offset: [0.0, 0.7, 0., 0.],
             oscx_feedback: [0.4, 0., 0., 0.],
             oscx_adsr_attack: [0.0128, 0.00092, 0.00423, 0.00243],
             oscx_adsr_decay: [3.38, 0.969, 60.0, 2.33],
             oscx_adsr_sustain: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-33.), db_to_gain(-11.)],
             oscx_adsr_release: [0.05, 6.26, 0.145, 0.05],
         });
-        
+
         synth.presets.push(SynthesizerPreset {
             id: 1,
             name: "G-FUNK bass".to_string(),
@@ -77,9 +74,9 @@ impl Synthesizer {
             filter_f0: (880 * 2).hz() as biquad::Hertz<f32>,
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             
-            oscx_coarse: [0.5, 0.5, 1.0, 0.5],
+            oscx_coarse: [0.5, 0.5, 1.0, 1.0],
             oscx_level: [db_to_gain(-100.), db_to_gain(-100.), db_to_gain(-100.0), db_to_gain(0.0)],
-            oscx_osc_type: [OSC_OFF, OSC_OFF, OSC_OFF, SAW_ANALOGIC_64],
+            oscx_osc_type: [OSC_OFF, OSC_OFF, OSC_OFF, SAW_DIGITAL],
             oscx_phase_offset: [0.0, 0.7, 0., 0.],
             oscx_feedback: [0.4, 0., 0., 0.],
             oscx_adsr_attack: [0.0128, 0.00092, 0.00423, 0.00243],
@@ -184,31 +181,12 @@ impl Processor for Synthesizer {
         }
     }
 
-    fn clear_notes_events(&mut self) {
-        for i in 0..self.nb_actives_notes {
-            self.voices[i].stop_note();
-        }
-        self.note_events.clear();
-    }
-
     fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
         return &mut self.note_events;
     }
 
     fn add_notes_event(&mut self, midi_message: NoteEvent) {
         self.note_events.push(midi_message);
-    }
-
-    fn is_armed(&self) -> bool {
-        return self.im_armed;
-    }
-
-    fn set_is_armed(&mut self, is_armed: bool) {
-        self.im_armed = is_armed;
-    }
-
-    fn get_id(&self) -> usize {
-        return self.id;
     }
 
     fn get_current_preset_id(&self) -> usize {
@@ -225,5 +203,9 @@ impl Processor for Synthesizer {
             presets.push(Box::new(preset.clone()));
         }
         return presets;
+    }
+
+    fn prepare(&mut self, _sample_rate: f32, _num_samples: usize, _nb_channels: usize) {
+        
     }
 }
