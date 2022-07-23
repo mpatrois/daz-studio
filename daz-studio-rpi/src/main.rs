@@ -66,7 +66,7 @@ fn main() {
     };
 
     let mut stream = portaudio.open_non_blocking_stream(settings, callback).unwrap();
-    stream.start();
+    stream.start().unwrap();
 
     let _connexion_midi : midir::MidiInputConnection<()>;
 
@@ -109,18 +109,26 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
     let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
 
     let key_board_notes = HashMap::from([
-        (Keycode::A, 54),
-        (Keycode::Z, 55),
-        (Keycode::E, 56),
-        (Keycode::R, 57),
-        (Keycode::T, 58),
-        (Keycode::Y, 59),
-        (Keycode::U, 60),
-        (Keycode::I, 61),
-        (Keycode::O, 62),
-        (Keycode::P, 63),
-        (Keycode::Q, 64),
-        (Keycode::S, 65),
+        (Keycode::A, 52),
+        (Keycode::Z, 53),
+        (Keycode::E, 54),
+        (Keycode::R, 55),
+        (Keycode::T, 56),
+        (Keycode::Y, 57),
+        (Keycode::U, 58),
+        (Keycode::I, 59),
+        (Keycode::O, 60),
+        (Keycode::P, 61),
+        (Keycode::Q, 62),
+        (Keycode::S, 63),
+        (Keycode::D, 64),
+        (Keycode::F, 65),
+        (Keycode::G, 67),
+        (Keycode::H, 68),
+        (Keycode::J, 69),
+        (Keycode::K, 70),
+        (Keycode::L, 71),
+        (Keycode::M, 72),
     ]);
 
     let mut main_ui = ui::MainUI  {

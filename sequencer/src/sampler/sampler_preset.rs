@@ -3,8 +3,6 @@ use crate::preset::Preset;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-// use std::io::Read;
-// use std::path::Path;
 
 use serde::{Deserialize};
 
@@ -30,10 +28,18 @@ pub struct SamplerPreset {
 
 impl SamplerPreset {
     pub fn new(filepath: String) -> Result<SamplerPreset, Box<dyn Error>>  {
-        let file = File::open(filepath)?;
+
+        let parent_path = std::path::Path::new(&filepath).parent().unwrap().to_str().unwrap();
+
+        let file = File::open(&filepath)?;
         let reader = BufReader::new(file);
 
-        let sampler_preset: SamplerPreset = serde_json::from_reader(reader)?;
+        let mut sampler_preset: SamplerPreset = serde_json::from_reader(reader)?;
+
+        for sample in sampler_preset.samples.iter_mut() {
+            sample.filepath = parent_path.to_string() + "/" + &sample.filepath.to_string();
+        }
+
         Ok(sampler_preset)
     }
 }
