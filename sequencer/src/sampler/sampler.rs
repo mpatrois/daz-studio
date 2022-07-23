@@ -4,11 +4,12 @@ use crate::sampler::sample::Sample;
 use crate::sampler::sample_voice::SamplerVoice;
 use crate::sampler::sampler_preset::SamplerPreset;
 use crate::preset::Preset;
+use std::rc::Rc;
 
 const MAX_NOTES : usize = 32;
 
 pub struct Sampler {
-    pub samples: Vec<Sample>,
+    pub samples: Vec<Rc<Sample>>,
     voices: Vec<SamplerVoice>,
     nb_actives_notes: usize,
     pub attack: f32,
@@ -19,7 +20,8 @@ pub struct Sampler {
     pub note_events: Vec<NoteEvent>,
     pub im_armed: bool,
     presets: Vec<SamplerPreset>,
-    preset_id: usize
+    preset_id: usize,
+    sample_rate: f32,
 }
 
 impl Sampler {
@@ -32,6 +34,7 @@ impl Sampler {
         }
 
         let mut sampler = Sampler {
+            sample_rate: sample_rate,
             voices: voices,
             nb_actives_notes: 0,
             samples: Vec::new(),
@@ -46,17 +49,31 @@ impl Sampler {
             preset_id: preset_id,
         };
 
-        let sampler_preset_default = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());
-        sampler.presets.push(sampler_preset_default.unwrap());
+        let presets = [
+            "./data/sampler-presets/Daz-Funk/preset.json",
+            "./data/sampler-presets/Daz-Kit/preset.json",
+            "./data/sampler-presets/Daz-Special/preset.json",
+        ];
 
-        let first_preset = sampler.presets[0].clone();
-
-        for sample_info in first_preset.samples.iter() {
-            let sample = Sample::load_sample(sample_info, sample_rate);
-            sampler.samples.push(sample);
+        for preset in presets {
+            let sampler_preset = SamplerPreset::new(preset.to_string());
+            sampler.presets.push(sampler_preset.unwrap());
         }
 
+        sampler.load_samples();
+
         return sampler;
+    }
+
+    fn load_samples(&mut self) {
+        self.all_note_off();
+        self.samples.clear();
+        for sample_info in self.presets[self.preset_id].samples.iter() {
+            let sample = Sample::load_sample(sample_info, self.sample_rate);
+            self.samples.push(Rc::new(sample));
+        }
+
+
     }
 }
 
@@ -76,7 +93,7 @@ impl Processor for Sampler {
                     self.voices[note_to_active].adsr.reset();
                     self.voices[note_to_active].adsr.recalculate_rates();
 
-                    self.voices[note_to_active].start_note(midi_note, velocity, &self.samples[sample_idx] as *const Sample);
+                    self.voices[note_to_active].start_note(midi_note, velocity, self.samples[sample_idx].clone());
                     self.nb_actives_notes += 1;
                     break;
                 }
@@ -110,7 +127,7 @@ impl Processor for Sampler {
             if self.voices[i].is_ended() {
                 self.nb_actives_notes -= 1;
                 let active_notes = self.nb_actives_notes as usize;
-                self.voices[i] = self.voices[active_notes];
+                self.voices[i] = self.voices[active_notes].clone();
             }
         }
     }
@@ -128,7 +145,10 @@ impl Processor for Sampler {
     }
 
     fn set_current_preset_id(&mut self, id: usize) {
-        self.preset_id = id;
+        if self.preset_id != id {
+            self.preset_id = id;
+            self.load_samples();
+        }
     }
 
     fn get_presets(&self) -> Vec<Box<dyn Preset>> {

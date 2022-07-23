@@ -71,6 +71,8 @@ impl Sequencer {
         sequencer.compute_elapsed_time_each_render();
 
         sequencer.add_processor(Box::new(Sampler::new(sample_rate, 0)));
+        sequencer.add_processor(Box::new(Sampler::new(sample_rate, 1)));
+        sequencer.add_processor(Box::new(Sampler::new(sample_rate, 2)));
         sequencer.add_processor(Box::new(Mood::new(sample_rate, 0)));
         sequencer.add_processor(Box::new(Mood::new(sample_rate, 1)));
         sequencer.add_processor(Box::new(Mood::new(sample_rate, 3)));

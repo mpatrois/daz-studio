@@ -3,91 +3,91 @@
     "decay": 6.0,
     "sustain": 1.0,
     "release": 0.74,
-    "name": "Daz Funk",
+    "name": "Daz Kit",
     "id": 0,
     "samples": [
         {
             "root_midi_note": 52,
             "note_midi_min": 52,
             "note_midi_max": 52,
-            "filepath": "hihat.wav",
+            "filepath": "clap-1.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 53,
             "note_midi_min": 53,
             "note_midi_max": 53,
-            "filepath": "hihat2.wav",
+            "filepath": "clap-2.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 54,
             "note_midi_min": 54,
             "note_midi_max": 54,
-            "filepath": "hihat3.wav",
+            "filepath": "hhat-1.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 55,
             "note_midi_min": 55,
             "note_midi_max": 55,
-            "filepath": "kick.wav",
+            "filepath": "hhat-2.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 56,
             "note_midi_min": 56,
             "note_midi_max": 56,
-            "filepath": "kick2.wav",
+            "filepath": "hhat-3.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 57,
             "note_midi_min": 57,
             "note_midi_max": 57,
-            "filepath": "kick3.wav",
+            "filepath": "kick-1.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 58,
             "note_midi_min": 58,
             "note_midi_max": 58,
-            "filepath": "openhat.wav",
+            "filepath": "kick-2.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 59,
             "note_midi_min": 59,
             "note_midi_max": 59,
-            "filepath": "openhat2.wav",
+            "filepath": "kick-3.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 60,
             "note_midi_min": 60,
             "note_midi_max": 60,
-            "filepath": "snare.wav",
+            "filepath": "snap-1.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 61,
             "note_midi_min": 61,
             "note_midi_max": 61,
-            "filepath": "snare2.wav",
+            "filepath": "snare-1.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 62,
             "note_midi_min": 62,
             "note_midi_max": 62,
-            "filepath": "snare3.wav",
+            "filepath": "snare-2.wav",
             "is_one_shot": true
         },
         {
             "root_midi_note": 63,
             "note_midi_min": 63,
             "note_midi_max": 63,
-            "filepath": "clap.wav",
+            "filepath": "snare-3.wav",
             "is_one_shot": true
         }
     ]

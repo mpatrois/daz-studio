@@ -15,6 +15,20 @@ pub struct Sample {
 }
 
 impl Sample {
+
+    pub fn empty() -> Sample {
+        Sample {
+            sample_rate: 44000.,
+            left_channel: Vec::new(),
+            right_channel: Vec::new(),
+            root_midi_note: 0,
+            size: 0,
+            note_midi_min: 0,
+            note_midi_max: 0,
+            is_one_shot: true
+        }
+    }
+
     pub fn load_sample(sample_info: &SampleInfo, sample_rate: f32) -> Sample {
         let file_in = File::open(sample_info.filepath.clone()).unwrap();
         let (header, samples) = wav_io::read_from_file(file_in).unwrap();
