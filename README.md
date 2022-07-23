@@ -63,13 +63,14 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
     - [ ] Tap tempo
     - [x] Quantize
 - UI/Controls
-    - [ ] Play/Stop sequencer
+    - [x] Play/Stop sequencer
     - [x] Toogle record mode
     - [x] Change current instrument 
     - [x] Change current instrument preset
     - [ ] Change volume of instrument
     - [ ] Clear track
     - [ ] Change current instruments settings (oscillators wave form type, ADSR etc )
+    - [x] Undo last recording
 
 - [x] Read Midi (naïve implementation)
 - [ ] Visualization
