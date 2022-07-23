@@ -15,6 +15,7 @@ pub enum Message {
     SetBpmHasBiped(bool),
     SetMidiMessagesInstrument(Vec<NoteEvent>),
     SetWaveFormData(Vec<f32>),
+    SetRMSInstrument(usize, f32, f32),
     NextInstrument,
     PreviousInstrument,
     PlayStop,
@@ -46,7 +47,9 @@ pub struct InstrumentData {
     pub volume: f32,
     pub current_preset_id: usize,
     pub presets: Vec<String>,
-    pub paired_notes: Vec<NoteEvent>
+    pub paired_notes: Vec<NoteEvent>,
+    pub rms_left: f32,
+    pub rms_right: f32,
 }
 
 pub struct SequencerData {
@@ -62,7 +65,7 @@ pub struct SequencerData {
     pub ticks_per_quarter_note: i32,
     pub is_recording: bool,
     pub instrument_selected_id: usize,
-    pub insruments: Vec<InstrumentData>,
+    pub instruments: Vec<InstrumentData>,
     pub receiver: Receiver<Message>,
     pub record_session: i32,
     pub undo_last_session: bool,
@@ -81,13 +84,13 @@ impl SequencerData {
             bars: 2,
             is_playing: false,
             bpm_has_biped: false,
-            volume: 0.6,
+            volume: 1.,
             metronome_active: true,
             is_recording: true,
             ticks_per_quarter_note: 960,
             instrument_selected_id: 0,
             tick_time: 0.0,
-            insruments: Vec::new(),
+            instruments: Vec::new(),
             receiver,
             record_session: 0,
             undo_last_session: false,
@@ -128,7 +131,7 @@ impl SequencerData {
                 },
                 Message::NextInstrument => {
                     self.instrument_selected_id += 1;
-                    if self.instrument_selected_id > self.insruments.len() - 1 {
+                    if self.instrument_selected_id > self.instruments.len() - 1 {
                         self.instrument_selected_id = 0;
                     }
                 },
@@ -136,20 +139,20 @@ impl SequencerData {
                     if self.instrument_selected_id > 0 {
                         self.instrument_selected_id -= 1;
                     } else {
-                        self.instrument_selected_id = self.insruments.len() - 1;
+                        self.instrument_selected_id = self.instruments.len() - 1;
                     }
                 },
                 Message::NextPreset => {
-                    self.insruments[self.instrument_selected_id].current_preset_id += 1;
-                    if self.insruments[self.instrument_selected_id].current_preset_id > self.insruments[self.instrument_selected_id].presets.len() - 1 {
-                        self.insruments[self.instrument_selected_id].current_preset_id = 0;
+                    self.instruments[self.instrument_selected_id].current_preset_id += 1;
+                    if self.instruments[self.instrument_selected_id].current_preset_id > self.instruments[self.instrument_selected_id].presets.len() - 1 {
+                        self.instruments[self.instrument_selected_id].current_preset_id = 0;
                     }
                 },
                 Message::PreviousPreset => {
-                    if  self.insruments[self.instrument_selected_id].current_preset_id > 0  {
-                        self.insruments[self.instrument_selected_id].current_preset_id -= 1;
+                    if  self.instruments[self.instrument_selected_id].current_preset_id > 0  {
+                        self.instruments[self.instrument_selected_id].current_preset_id -= 1;
                     } else {
-                        self.insruments[self.instrument_selected_id].current_preset_id = self.insruments[self.instrument_selected_id].presets.len() - 1;
+                        self.instruments[self.instrument_selected_id].current_preset_id = self.instruments[self.instrument_selected_id].presets.len() - 1;
                     }
                 },
                 Message::NextQuantize => {
@@ -166,13 +169,17 @@ impl SequencerData {
                     }
                 },
                 Message::SetMidiMessagesInstrument(note_events) => {
-                    self.insruments[self.instrument_selected_id].paired_notes = note_events;
+                    self.instruments[self.instrument_selected_id].paired_notes = note_events;
                 },
                 Message::UndoLastSession => {
                     self.undo_last_session = true;
                 },
                 Message::SetWaveFormData(audio_wave_form) => {
                     self.audio_wave_form = audio_wave_form;
+                },
+                Message::SetRMSInstrument(idx, rms_left, rms_right) => {
+                    self.instruments[idx].rms_left = rms_left;
+                    self.instruments[idx].rms_right = rms_right;
                 },
                 _ => (),
             }

@@ -74,7 +74,6 @@ impl MainUI {
         data_ui: &mut SequencerData,
         display: &mut SimulatorDisplay<Rgb888>,
     ) -> Result<(), Infallible> {
-    
 
         let metronome_color_active = Rgb888::new(15, 113, 214);
         let metronome_color = BACKGROUND_COLOR;
@@ -225,7 +224,9 @@ impl MainUI {
             let mut i : i32 = 0;
             let mut y = header_rectangle.bottom_right().unwrap().y + margin_top_instrument;
             let height_rect = 30;
-            for insrument in data_ui.insruments.iter() {
+
+            let width_box_name = 90;
+            for insrument in data_ui.instruments.iter() {
     
                 let mut text_style = MonoTextStyle::new(&FONT_6X12, INSTRUMENT_COLOR);
     
@@ -235,12 +236,58 @@ impl MainUI {
     
                 let rectangle_instrument_name = Rectangle::new(
                     Point::new(left_margin, y), 
-                    Size::new(100, height_rect)
+                    Size::new(width_box_name, height_rect)
+                );
+
+                let height_rms_left = (height_rect as f32 * insrument.rms_left) as i32;
+                let height_rms_right = (height_rect as f32 * insrument.rms_right) as i32;
+                let size_one_rms = 4;
+                let magin_left_rms = 2;
+                
+                let right_box_name = left_margin + width_box_name as i32;
+
+                let rms_rect_left_container = Rectangle::new(
+                    Point::new(right_box_name + magin_left_rms, y), 
+                    Size::new(size_one_rms, height_rect)
                 );
                 
+                let rms_rect_left = Rectangle::new(
+                    Point::new(right_box_name + magin_left_rms, y + (height_rect as i32 - height_rms_left) as i32), 
+                    Size::new(size_one_rms, height_rms_left as u32)
+                );
+                
+                let rms_rect_right_container = Rectangle::new(
+                    Point::new(right_box_name + (magin_left_rms * 2) + size_one_rms as i32, y), 
+                    Size::new(size_one_rms, height_rect)
+                );
+
+                let rms_rect_right = Rectangle::new(
+                    Point::new(right_box_name + (magin_left_rms * 2) + size_one_rms as i32, y + (height_rect as i32 - height_rms_right)), 
+                    Size::new(size_one_rms, height_rms_right as u32)
+                );
+
+                rms_rect_left_container
+                    .into_styled(stroke_rect)
+                    .draw(display)?;
+                
+                rms_rect_left
+                    .into_styled(fill_rect)
+                    .draw(display)?;
+                
+                rms_rect_right_container
+                    .into_styled(stroke_rect)
+                    .draw(display)?;
+                
+                rms_rect_right
+                    .into_styled(fill_rect)
+                    .draw(display)?;
+                
                 let rectangle_instrument_notes = Rectangle::new(
-                    Point::new(100 + left_margin + left_margin, y), 
-                    Size::new(SCREEN_WIDTH - 100 - (left_margin as u32 * 3), height_rect)
+                    Point::new(
+                        right_box_name + (2 * (size_one_rms + magin_left_rms as u32) as i32 + magin_left_rms + left_margin / 2), 
+                        y
+                    ), 
+                    Size::new(SCREEN_WIDTH - width_box_name - (left_margin as u32 * 4), height_rect)
                 );
                 rectangle_instrument_notes
                     .into_styled(stroke_rect)
@@ -260,10 +307,6 @@ impl MainUI {
                 Text::new(&insrument.name, Point::new(x, y + 6 + 4), text_style).draw(display)?;
                 Text::new(&insrument.presets[insrument.current_preset_id], Point::new(x, y + (10 + 2) * 2), text_style).draw(display)?;
     
-                i += 1;
-                y += height_rect as i32 + margin_top_instrument;
-    
-    
                 let tick_width : f32 = rectangle_instrument_notes.size.width as f32 / (data_ui.bars as f32 * 4. * data_ui.ticks_per_quarter_note as f32);
                 let tick_x =  (tick_width * data_ui.tick as f32) as i32;
                 
@@ -281,7 +324,9 @@ impl MainUI {
                     rectangle_instrument_notes, 
                     data_ui
                 )?;
-    
+
+                i += 1;
+                y += height_rect as i32 + margin_top_instrument;
             }
         }
 
