@@ -5,6 +5,10 @@ A sequencer built in RUST. Runs on macOS and Linux for the moment.
 </p>
 
 
+<p align="center">
+    <img src="images/new-daz-studio.png" width="300">
+</p>
+
 ## About
 
 The first goal of this projet is to build a portable sequencer that you can bring to a party pour t'ambiancer mon frère.
@@ -23,9 +27,10 @@ G-funk incorporates multi-layered and melodic synthesizers, slow hypnotic groove
 Here is what the project looked like when I was doing it in C++, you can see a 320x240 LCD screen that display the UI of Daz Studio, push buttons, and a sound card wired to the GPIO of a Rasberry.
 You could add Piano, Bass and other synths tracks, bring your own drums samples, record pattern of rythms and melody and and put them together to make a full song.
 
-![Screenshot of Old Daz Studio Project](images/screen-shot-old-daz-studio.png)
+<img src="images/screen-shot-old-daz-studio.png" width="300">
 
-Not all of the old Daz project is reimplemented for the moment. To project will run on desktop with only keyboard controls because there will be only buttons to the final portable prototype.
+
+Not all of the old Daz project is reimplemented for the moment. On desktop the project run with only keyboard controls because there will be only buttons to the final portable prototype (no mouse).
 
 ## What to do (not exhaustive)
 - Oscillator based synth (leads, basses etc)
@@ -71,6 +76,7 @@ Not all of the old Daz project is reimplemented for the moment. To project will 
     - [ ] Clear track
     - [ ] Change current instruments settings (oscillators wave form type, ADSR etc )
     - [x] Undo last recording
+    - [x] Vu meter for each track
 
 - [x] Read Midi (naïve implementation)
 - [ ] Visualization
