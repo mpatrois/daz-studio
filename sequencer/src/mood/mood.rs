@@ -19,7 +19,6 @@ pub struct Mood {
     nb_actives_notes: usize,
     presets: Vec<MoodPreset>,
     preset_id: usize,
-    mood_outputs: Vec<f32>,
     reverb: Reverb
 }
 
@@ -42,7 +41,6 @@ impl Mood {
             presets: get_mood_presets(),
             preset_id: id,
             reverb: Reverb::new(sample_rate),
-            mood_outputs: Vec::new(),
         }
     }
 }
@@ -83,14 +81,14 @@ impl Processor for Mood {
 
     fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
 
-        for s in &mut self.mood_outputs {
+        for s in outputs.iter_mut() {
             *s = 0.0;
         }
 
         for i in 0..self.nb_actives_notes {
             let i: usize = i as usize;
             if self.voices[i].active {
-                self.voices[i].render_next_block(self.mood_outputs.as_mut_slice(), nb_channels);
+                self.voices[i].render_next_block(outputs, nb_channels);
             }
         }
         for i in 0..self.nb_actives_notes {
@@ -103,12 +101,12 @@ impl Processor for Mood {
         }
 
         if self.presets[self.preset_id].reverb_enabled {
-            self.reverb.process(self.mood_outputs.as_mut_slice(), num_samples);
+            self.reverb.process(outputs, num_samples);
         }
 
-        for i in 0..self.mood_outputs.len() {
-            outputs[i] += self.mood_outputs[i];
-        }
+        // for i in 0..self.mood_outputs.len() {
+        //     outputs[i] += self.mood_outputs[i];
+        // }
     }
 
     fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
@@ -139,10 +137,5 @@ impl Processor for Mood {
         return presets;
     }
 
-    fn prepare(&mut self, _sample_rate: f32, num_samples: usize, nb_channels: usize) {
-        self.mood_outputs = Vec::with_capacity(num_samples * nb_channels);
-        for _i in 0..self.mood_outputs.capacity() {
-            self.mood_outputs.push(0.0);
-        } 
-    }
+    fn prepare(&mut self, _sample_rate: f32, _num_samples: usize, _nb_channels: usize) {}
 }

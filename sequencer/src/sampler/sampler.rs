@@ -23,7 +23,7 @@ pub struct Sampler {
 }
 
 impl Sampler {
-    pub fn new(sample_rate: f32, id: usize) -> Sampler {
+    pub fn new(sample_rate: f32, preset_id: usize) -> Sampler {
 
         let mut voices : Vec<SamplerVoice> = Vec::new();
 
@@ -39,11 +39,11 @@ impl Sampler {
             decay: 0.0,
             sustain: 1.0,
             release: 0.0,
-            id: id,
+            id: 0,
             note_events: Vec::with_capacity(100),
             im_armed: false,
             presets: Vec::new(),
-            preset_id: 0,
+            preset_id: preset_id,
         };
 
         let sampler_preset_default = SamplerPreset::new("./data/sampler-presets/Daz-Funk/preset.json".to_string());

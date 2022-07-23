@@ -104,7 +104,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             name: "Guitar Bass".to_string(),
             oscx_octave_range: [32., 16., 32.],
             oscx_semitone_shift: [0.0, 0., 0.0],
-            oscx_volume: [0.1, 0.25, 0.7],
+            oscx_volume: [0.2, 0.45, 0.7],
             oscx_phase_offset: [0., 0.6, 0.],
             oscx_wave_form: [WAVE_SAW_ANALOGIC_4, WAVE_SINE, WAVE_SAW_ANALOGIC_4],
             oscx_adsr_attack: [0.00423, 0.00423, 0.00423],
@@ -175,7 +175,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
 
             reverb_enabled: true,
             reverb_params: ReverbParameters {
-                room_size: 0.5,
+                room_size: 0.2,
                 damping: 0.5,
                 wet_level: 0.33,
                 dry_level: 0.4,
@@ -203,7 +203,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
 
             reverb_enabled: false,
             reverb_params: ReverbParameters {
-                room_size: 0.5,
+                room_size: 0.2,
                 damping: 0.5,
                 wet_level: 0.33,
                 dry_level: 0.4,

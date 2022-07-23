@@ -42,7 +42,7 @@ fn main() {
     let (mut sequencer, audio_sender) = Sequencer::new(SAMPLE_RATE as f32, FRAMES_PER_BUFFER as usize);
 
     // Just for testing purpose, need to synchronise this after
-    data_ui.insruments = sequencer.data.insruments.clone();
+    data_ui.instruments = sequencer.data.instruments.clone();
     
     sequencer.audio_state_senders.push(ui_sender.clone());
 
@@ -103,7 +103,7 @@ fn main() {
 }
 
 fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut SequencerData, broadcaster: DataBroadcaster) -> Result<(), Infallible> {
-    let output_settings = OutputSettingsBuilder::new().scale(1).build();
+    let output_settings = OutputSettingsBuilder::new().scale(2).build();
     let mut window = Window::new("Emulator", &output_settings);
 
     let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
