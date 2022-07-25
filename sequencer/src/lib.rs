@@ -13,6 +13,7 @@ pub mod noise;
 pub mod preset;
 pub mod fx;
 pub mod sequencer_data;
+pub mod epiano;
 
 use crate::processor::Processor;
 use crate::mood::mood::Mood;
@@ -23,6 +24,7 @@ use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
 use crate::sequencer_data::Message as SequencerDataMessage;
 use crate::midimessage::MidiMessage;
+use crate::epiano::epiano::Epiano;
 use crate::decibels::root_mean_square_stereo;
 
 use std::sync::mpsc::Sender;
@@ -70,7 +72,9 @@ impl Sequencer {
 
         sequencer.compute_elapsed_time_each_render();
 
-        sequencer.add_processor(Box::new(Sampler::new(sample_rate, 0)));
+        Epiano::new(sample_rate);
+
+        sequencer.add_processor(Box::new(Epiano::new(sample_rate)));
         sequencer.add_processor(Box::new(Sampler::new(sample_rate, 1)));
         sequencer.add_processor(Box::new(Sampler::new(sample_rate, 2)));
         sequencer.add_processor(Box::new(Mood::new(sample_rate, 0)));
@@ -329,6 +333,7 @@ impl Sequencer {
                 let rms_left = self.data.instruments[i].rms_left;
                 sender.send(SequencerDataMessage::SetRMSInstrument(i, rms_right, rms_left)).unwrap();
             }
+            sender.send(SequencerDataMessage::SetWaveFormData(_outputs.to_vec())).unwrap();
         }
     }
 

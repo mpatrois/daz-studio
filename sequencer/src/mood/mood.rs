@@ -92,7 +92,6 @@ impl Processor for Mood {
             }
         }
         for i in 0..self.nb_actives_notes {
-            let i: usize = i as usize;
             if !self.voices[i].active {
                 self.nb_actives_notes -= 1;
                 let active_notes = self.nb_actives_notes as usize;
@@ -103,10 +102,6 @@ impl Processor for Mood {
         if self.presets[self.preset_id].reverb_enabled {
             self.reverb.process(outputs, num_samples);
         }
-
-        // for i in 0..self.mood_outputs.len() {
-        //     outputs[i] += self.mood_outputs[i];
-        // }
     }
 
     fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
