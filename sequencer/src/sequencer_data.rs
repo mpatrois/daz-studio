@@ -1,6 +1,13 @@
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
+use std::error::Error;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::prelude::*;
+use std::fs;
+
+use serde::{Deserialize, Serialize};
 
 use crate::midimessage::NoteEvent;
 
@@ -26,6 +33,7 @@ pub enum Message {
     SetIsRecording(bool),
     SetCurrentInstrumentSelected(usize),
     UndoLastSession,
+    SetInstruments(Vec<InstrumentData>),
 }
 
 #[derive(Clone)]
@@ -41,7 +49,7 @@ impl DataBroadcaster {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct InstrumentData {
     pub name: String,
     pub volume: f32,
@@ -181,6 +189,14 @@ impl SequencerData {
                     self.instruments[idx].rms_left = rms_left;
                     self.instruments[idx].rms_right = rms_right;
                 },
+                Message::SetInstruments(instruments) => {
+                    self.instruments = instruments;
+                    for instrument in self.instruments.iter_mut() {
+                        for note_event in instrument.paired_notes.iter_mut() {
+                            note_event.record_session = -1;
+                        }
+                    }
+                },
                 _ => (),
             }
         }
@@ -204,5 +220,27 @@ impl SequencerData {
     
     pub fn get_quantize(&self) -> i32 {
        QUANTIZE_VALUE[self.quantize_idx]
+    }
+
+    pub fn import_from_file(&mut self, filepath: String) -> Result<Vec<InstrumentData>, Box<dyn Error>>  {
+        
+        let file = File::open(&std::path::Path::new(&filepath))?;
+        let reader = BufReader::new(file);
+
+        let instruments: Vec<InstrumentData> = serde_json::from_reader(reader)?;
+
+        Ok(instruments)
+    }
+    
+    pub fn export_to_file(&mut self, filepath: String) -> Result<(), Box<dyn Error>>  {
+        
+        // println!("Export");
+        let parent_path = std::path::Path::new(&filepath).parent().unwrap().to_str().unwrap();
+        fs::create_dir_all(parent_path)?;
+        let mut file = File::create(&std::path::Path::new(&filepath))?;
+        let serialized = serde_json::to_string(&self.instruments).unwrap();
+        file.write_all(serialized.as_bytes())?;
+        println!("Export");
+        Ok(())
     }
 }

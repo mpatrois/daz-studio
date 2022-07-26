@@ -441,13 +441,13 @@ impl Processor for Epiano {
         }
     }
 
-    fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
-        return &mut self.note_events;
-    }
+    // fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
+    //     return &mut self.note_events;
+    // }
 
-    fn add_notes_event(&mut self, midi_message: NoteEvent) {
-        self.note_events.push(midi_message);
-    }
+    // fn add_notes_event(&mut self, midi_message: NoteEvent) {
+    //     self.note_events.push(midi_message);
+    // }
 
     fn get_current_preset_id(&self) -> usize {
         self.preset_id

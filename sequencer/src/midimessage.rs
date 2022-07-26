@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 pub const NOTE_ON : u8 = 0x9c;
-pub const NOTE_OFF : u8 = 0x8c; 
+pub const NOTE_OFF : u8 = 0x8c;
 
 #[derive(Copy, Clone)]
 pub struct MidiMessage {
@@ -8,7 +10,7 @@ pub struct MidiMessage {
     pub third: u8
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Deserialize, Serialize)]
 pub struct NoteEvent {
     pub note_id: u8,
     pub tick_on: i32,

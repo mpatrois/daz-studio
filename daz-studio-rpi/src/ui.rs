@@ -39,7 +39,7 @@ pub const HEIGHT_RECT_INSTRU : i32 = 30;
 
 pub struct MainUI {
    pub metronome_left: bool,
-   pub menu_open: bool,
+//    pub menu_open: bool,
 //    pub menu_idx_active: usize,
    pub menu: Menu,
 }
@@ -49,7 +49,7 @@ impl MainUI {
     pub fn new() -> MainUI {
         MainUI { 
             metronome_left: true, 
-            menu_open: false, 
+            // menu_open: false, 
             menu: Menu::new()
         }
     }
@@ -90,7 +90,7 @@ impl MainUI {
         Ok({})
     }
 
-    pub fn draw_menu(&mut self,  data_ui: &mut SequencerData, display: &mut SimulatorDisplay<Rgb888>) -> Result<(), Infallible> {
+    pub fn draw_menu(&mut self,  _data_ui: &mut SequencerData, display: &mut SimulatorDisplay<Rgb888>) -> Result<(), Infallible> {
         let fill_rect = PrimitiveStyleBuilder::new()
             .fill_color(BACKGROUND_COLOR)
             .build();
@@ -171,7 +171,7 @@ impl MainUI {
         
         self.draw_pattern(data_ui, display)?;
         
-        if self.menu_open {
+        if self.menu.is_opened {
             self.draw_menu(data_ui, display)?;
         }
 
