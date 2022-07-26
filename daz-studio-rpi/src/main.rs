@@ -5,6 +5,7 @@ const SAMPLE_RATE: f64 = 48_000.0;
 const FRAMES_PER_BUFFER: u32 = 512;
 
 mod ui;
+mod menu;
 
 use sequencer;
 use sequencer::midimessage::MidiMessage;
@@ -127,19 +128,15 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
         (Keycode::H, 68),
         (Keycode::J, 69),
         (Keycode::K, 70),
-        (Keycode::L, 71),
-        (Keycode::M, 72),
     ]);
 
-    let mut main_ui = ui::MainUI  {
-        metronome_left: true
-    };
+    let mut main_ui = ui::MainUI::new();
 
     'main_loop: loop {
         
         data_ui.process_messages();
 
-        main_ui.update(data_ui, &mut display)?;
+        main_ui.draw(data_ui, &mut display)?;
         window.update(&display);
 
         for event in window.events() {
@@ -175,10 +172,27 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                     match keycode {
                         Keycode::Escape => break 'main_loop,
                         Keycode::Backspace => broadcaster.send(Message::UndoLastSession),
-                        Keycode::Up => broadcaster.send(Message::PreviousInstrument),
-                        Keycode::Down => broadcaster.send(Message::NextInstrument),
-                        Keycode::Left => broadcaster.send(Message::PreviousPreset),
-                        Keycode::Right => broadcaster.send(Message::NextPreset),
+                        Keycode::Up => {
+                            if main_ui.menu_open {
+                                main_ui.menu.up();
+                            } else {
+                                broadcaster.send(Message::PreviousInstrument)
+                            }
+                        },
+                        Keycode::Down => {
+                            if main_ui.menu_open {
+                                main_ui.menu.down();
+                            } else {
+                                broadcaster.send(Message::NextInstrument)
+                            }
+                           
+                        },
+                        Keycode::Left => {
+                            broadcaster.send(Message::PreviousPreset)
+                        },
+                        Keycode::Right => {
+                            broadcaster.send(Message::NextPreset)
+                        },
                         Keycode::W => broadcaster.send(Message::SetIsRecording(!data_ui.is_recording)),
                         Keycode::X => broadcaster.send(Message::SetMetronomeActive(!data_ui.metronome_active)),
                         Keycode::C => {
@@ -194,6 +208,9 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         Keycode::N => {
                             let new_tempo = data_ui.tempo + 1.0;
                             broadcaster.send(Message::SetTempo(new_tempo));
+                        },
+                        Keycode::M => {
+                           main_ui.menu_open = !main_ui.menu_open;
                         },
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
                             midi_event_sender.send(sequencer::Message::Midi(MidiMessage {

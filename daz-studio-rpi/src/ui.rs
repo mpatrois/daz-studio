@@ -20,6 +20,8 @@ use embedded_graphics_simulator::{
     SimulatorDisplay
 };
 
+use crate::menu::Menu;
+
 pub const SCREEN_WIDTH: u32 = 320;
 pub const SCREEN_HEIGHT: u32 = 240;
 
@@ -27,6 +29,9 @@ pub const BACKGROUND_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
 
 pub const INSTRUMENT_COLOR : Rgb888 = Rgb888::new(234, 224, 213);
 pub const WAVEFORM_COLOR : Rgb888 = Rgb888::new(34, 51, 59);
+pub const PLAY_COLOR : Rgb888 = Rgb888::new(53, 114, 102);
+pub const PLAY_HEAD_COLOR : Rgb888 = Rgb888::new(254, 177, 4);
+// let play_head_color = Rgb888::new(254, 177, 4);
 
 pub const LEFT_MARGIN : i32 = 10;
 pub const HEIGHT_RECT_INSTRU : i32 = 30;
@@ -34,9 +39,20 @@ pub const HEIGHT_RECT_INSTRU : i32 = 30;
 
 pub struct MainUI {
    pub metronome_left: bool,
+   pub menu_open: bool,
+//    pub menu_idx_active: usize,
+   pub menu: Menu,
 }
 
 impl MainUI {
+
+    pub fn new() -> MainUI {
+        MainUI { 
+            metronome_left: true, 
+            menu_open: false, 
+            menu: Menu::new()
+        }
+    }
 
     pub fn draw_wave_form(
         &mut self, 
@@ -74,14 +90,101 @@ impl MainUI {
         Ok({})
     }
 
-    pub fn update(&mut self,
+    pub fn draw_menu(&mut self,  data_ui: &mut SequencerData, display: &mut SimulatorDisplay<Rgb888>) -> Result<(), Infallible> {
+        let fill_rect = PrimitiveStyleBuilder::new()
+            .fill_color(BACKGROUND_COLOR)
+            .build();
+
+        let fill_menu_container = PrimitiveStyleBuilder::new()
+            .fill_color(INSTRUMENT_COLOR)
+            .build();
+
+        let stroke_rect = PrimitiveStyleBuilder::new()
+            .stroke_color(PLAY_HEAD_COLOR)
+            .stroke_width(2)
+            .build();
+
+        let container = Rectangle::new(
+            Point::new(LEFT_MARGIN, LEFT_MARGIN), 
+            Size::new(
+                SCREEN_WIDTH - LEFT_MARGIN as u32 * 2, 
+                SCREEN_HEIGHT - LEFT_MARGIN as u32 * 2
+            )
+        );
+
+        container.into_styled(fill_menu_container)
+            .draw(display)?;
+        
+        container.into_styled(stroke_rect)
+            .draw(display)?;
+
+         // Tempo
+         {
+            let text_style_normal = MonoTextStyle::new(&FONT_8X13, BACKGROUND_COLOR);
+            let text_style_active = MonoTextStyle::new(&FONT_8X13, INSTRUMENT_COLOR);
+
+            // let header_rectangle = Rectangle::new(
+            //     Point::new(LEFT_MARGIN, LEFT_MARGIN),
+            //     Size::new(SCREEN_WIDTH - LEFT_MARGIN as u32 * 2, 25)
+            // );
+            // let i = 0;
+            // let menu_items = [
+            //     "Open Project",
+            //     "Save Project",
+            // ];
+
+            let mut y = LEFT_MARGIN * 3;
+
+            for (i, item) in self.menu.items.iter().enumerate() {
+                let text_data = item.name.to_string();
+                
+                let text_style ;
+                if self.menu.current == i {
+                    text_style = text_style_active;
+                } else {
+                    text_style = text_style_normal;
+                }
+
+                let text = Text::new(
+                    &text_data, 
+                    Point::new(LEFT_MARGIN * 2 + 10, y + text_style.font.character_size.height as i32), 
+                    text_style
+                );
+
+                if self.menu.current == i {
+                    Rectangle::new(
+                        Point::new(LEFT_MARGIN as i32 * 2, y), 
+                        Size::new(SCREEN_WIDTH - LEFT_MARGIN as u32 * 4, text_style.font.character_size.height + 6)
+                    ).into_styled(fill_rect).draw(display)?;
+                }
+
+                text.draw(display)?;
+                y += text_style.font.character_size.height as i32 + 6;
+            }
+
+        }
+
+        Ok({})
+    }
+
+    pub fn draw(&mut self, data_ui: &mut SequencerData, display: &mut SimulatorDisplay<Rgb888>) -> Result<(), Infallible> {
+        
+        self.draw_pattern(data_ui, display)?;
+        
+        if self.menu_open {
+            self.draw_menu(data_ui, display)?;
+        }
+
+        Ok(())
+    }
+    
+    pub fn draw_pattern(&mut self,
         data_ui: &mut SequencerData,
         display: &mut SimulatorDisplay<Rgb888>,
     ) -> Result<(), Infallible> {
 
         let metronome_color_active = Rgb888::new(15, 113, 214);
         let metronome_color = BACKGROUND_COLOR;
-        let play_color = Rgb888::new(53, 114, 102);
         let record_color = Rgb888::new(255, 51, 36);
 
         if data_ui.bpm_has_biped {
@@ -117,12 +220,12 @@ impl MainUI {
                 Point::new(LEFT_MARGIN, header_rectangle.center().y + h_triangle / 2),
             );
             if data_ui.is_playing {
-                let style_triangle = PrimitiveStyle::with_fill(play_color);
+                let style_triangle = PrimitiveStyle::with_fill(PLAY_COLOR);
                 triangle_play
                     .into_styled(style_triangle)
                     .draw(display)?;
             } else {
-                let style_triangle = PrimitiveStyle::with_stroke(play_color, 1);
+                let style_triangle = PrimitiveStyle::with_stroke(PLAY_COLOR, 1);
                 triangle_play
                     .into_styled(style_triangle)
                     .draw(display)?;
@@ -289,8 +392,6 @@ impl MainUI {
         i: usize
     ) -> Result<(), Infallible> {
 
-        let play_head_color = Rgb888::new(254, 177, 4);
-
         let stroke_rect = PrimitiveStyleBuilder::new()
             .stroke_color(INSTRUMENT_COLOR)
             .stroke_width(1)
@@ -389,7 +490,7 @@ impl MainUI {
             Point::new(rectangle_instrument_notes.top_left.x + tick_x, rectangle_instrument_notes.bottom_right().unwrap().y)
         );
         play_head
-            .into_styled(PrimitiveStyle::with_stroke(play_head_color, 1))
+            .into_styled(PrimitiveStyle::with_stroke(PLAY_HEAD_COLOR, 1))
             .draw(display)?;
 
         self.draw_notes(
