@@ -52,7 +52,7 @@ fn main() {
             match msg {
                 sequencer::Message::Midi(midi) => {
                     if midi.first & 0xf0 == 0x90 {
-                        sequencer.note_on(midi.second);
+                        sequencer.note_on(midi.second, midi.third);
                     } else if midi.first & 0xf0 == 0x80 {
                         sequencer.note_off(midi.second);
                     }
@@ -206,8 +206,8 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                 }
                 _ => {},
             }
-            thread::sleep(Duration::from_millis(30));
         }
+        thread::sleep(Duration::from_millis(30));
     }
     Ok(())
 }

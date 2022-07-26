@@ -210,10 +210,10 @@ impl Sequencer {
         return self.data.tick;
     }
 
-    pub fn note_on(&mut self, note_id: u8) {
+    pub fn note_on(&mut self, note_id: u8, velocity: u8) {
         let idx = self.data.instrument_selected_id;
         if self.data.instrument_selected_id < self.processors.len() {
-            self.processors[idx].note_on(note_id, 1.0);
+            self.processors[idx].note_on(note_id, velocity as f32 / 127.);
             if self.data.is_recording && self.data.is_playing {
                 let quantize_tick = self.quantize_tick();
 

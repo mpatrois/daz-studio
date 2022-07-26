@@ -398,7 +398,7 @@ impl Processor for Epiano {
 						voice.pos -= voice.loop_idx;
 					}
 
-					let pos = voice.pos  as usize;
+					let pos = voice.pos as usize;
 					i = self.waves[pos] as i32 + ((voice.frac * (self.waves[pos + 1] - self.waves[pos]) as i32) >> 16) as i32;
 					x = voice.env * i as f32 / 32768.0;
 
