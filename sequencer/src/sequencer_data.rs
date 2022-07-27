@@ -61,6 +61,7 @@ pub struct InstrumentData {
 }
 
 pub struct SequencerData {
+    pub project_name: String,
     pub tempo: f32,
     pub quantize_idx: usize,
     pub tick: i32,
@@ -86,6 +87,7 @@ impl SequencerData {
     pub fn new() -> (SequencerData, Sender<Message>) {
         let (sender, receiver) = mpsc::channel::<Message>();
         let mut data = SequencerData {
+            project_name: "Project".to_string(),
             tick: 0,
             tempo: 95.0,
             quantize_idx: 2,

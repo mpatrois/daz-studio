@@ -1,5 +1,4 @@
-
-use sequencer::{sequencer_data::{SequencerData, InstrumentData}, midimessage::NoteEvent};
+use sequencer::{sequencer_data::{SequencerData, InstrumentData ,DataBroadcaster, Message}, midimessage::NoteEvent};
 
 use core::convert::Infallible;
 use embedded_graphics::{
@@ -21,6 +20,7 @@ use embedded_graphics_simulator::{
 };
 
 use crate::menu::Menu;
+use crate::menu::Action;
 
 pub const SCREEN_WIDTH: u32 = 320;
 pub const SCREEN_HEIGHT: u32 = 240;
@@ -39,18 +39,26 @@ pub const HEIGHT_RECT_INSTRU : i32 = 30;
 
 pub struct MainUI {
    pub metronome_left: bool,
-//    pub menu_open: bool,
-//    pub menu_idx_active: usize,
-   pub menu: Menu,
+   pub menus: Vec<Menu>,
+   pub current_menu: usize,
+   pub menu_is_open: bool,
 }
 
 impl MainUI {
 
     pub fn new() -> MainUI {
+
+        let menu = Menu::main();
+        let menu_projects = Menu::projects();
+        
         MainUI { 
             metronome_left: true, 
-            // menu_open: false, 
-            menu: Menu::new()
+            current_menu: 0,
+            menu_is_open: false,
+            menus: vec![
+                menu,
+                menu_projects
+            ],
         }
     }
 
@@ -135,11 +143,12 @@ impl MainUI {
 
             let mut y = LEFT_MARGIN * 3;
 
-            for (i, item) in self.menu.items.iter().enumerate() {
+            let menu = &mut self.menus[self.current_menu];
+            for (i, item) in menu.items.iter().enumerate() {
                 let text_data = item.name.to_string();
                 
                 let text_style ;
-                if self.menu.current == i {
+                if menu.current == i {
                     text_style = text_style_active;
                 } else {
                     text_style = text_style_normal;
@@ -151,7 +160,7 @@ impl MainUI {
                     text_style
                 );
 
-                if self.menu.current == i {
+                if menu.current == i {
                     Rectangle::new(
                         Point::new(LEFT_MARGIN as i32 * 2, y), 
                         Size::new(SCREEN_WIDTH - LEFT_MARGIN as u32 * 4, text_style.font.character_size.height + 6)
@@ -171,7 +180,7 @@ impl MainUI {
         
         self.draw_pattern(data_ui, display)?;
         
-        if self.menu.is_opened {
+        if self.menu_is_open {
             self.draw_menu(data_ui, display)?;
         }
 
@@ -553,4 +562,37 @@ impl MainUI {
         Ok({})    
     }
 
+    pub fn up(&mut self) {
+        if self.menu_is_open {
+            self.menus[self.current_menu].up();
+        }
+    }
+
+    pub fn down(&mut self) {
+        if self.menu_is_open {
+            self.menus[self.current_menu].down();
+        }
+    }
+
+    pub fn enter(&mut self, sequencer_data: &mut SequencerData, broadcaster: &DataBroadcaster) {
+        if self.menu_is_open {
+            let action = self.menus[self.current_menu].enter();
+            match action {
+                Action::OpenMenu(menu) => {
+                    self.current_menu = menu;
+                },
+                Action::LoadProject(project_path) => {
+                    let instruments = sequencer_data.import_from_file(project_path).unwrap();
+                    broadcaster.send(Message::SetInstruments(instruments));
+                    self.menu_is_open = false
+                },
+                Action::SaveProject => {
+                    sequencer_data.export_to_file("./saves/".to_string() + sequencer_data.project_name.as_str() + ".daz").unwrap();
+                    self.menu_is_open = false
+                },
+                _ => (),
+            }
+        }
+    }
+    
 }

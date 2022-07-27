@@ -104,7 +104,7 @@ fn main() {
 }
 
 fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut SequencerData, broadcaster: DataBroadcaster) -> Result<(), Infallible> {
-    let output_settings = OutputSettingsBuilder::new().scale(2).build();
+    let output_settings = OutputSettingsBuilder::new().scale(1).build();
     let mut window = Window::new("Emulator", &output_settings);
 
     let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(ui::SCREEN_WIDTH, ui::SCREEN_HEIGHT));
@@ -173,22 +173,22 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                         Keycode::Escape => break 'main_loop,
                         Keycode::Backspace => broadcaster.send(Message::UndoLastSession),
                         Keycode::Up => {
-                            if main_ui.menu.is_opened {
-                                main_ui.menu.up();
+                            if main_ui.menu_is_open {
+                                main_ui.up();
                             } else {
                                 broadcaster.send(Message::PreviousInstrument)
                             }
                         },
                         Keycode::Down => {
-                            if main_ui.menu.is_opened {
-                                main_ui.menu.down();
+                            if main_ui.menu_is_open {
+                                main_ui.down();
                             } else {
                                 broadcaster.send(Message::NextInstrument)
                             }
                         },
                         Keycode::Return => {
-                            if main_ui.menu.is_opened {
-                                main_ui.menu.enter(data_ui, &broadcaster);
+                            if main_ui.menu_is_open {
+                                main_ui.enter(data_ui, &broadcaster);
                             }
                         },
                         Keycode::Left => {
@@ -214,7 +214,7 @@ fn launch_ui(midi_event_sender: Sender<sequencer::Message>, data_ui: &mut Sequen
                             broadcaster.send(Message::SetTempo(new_tempo));
                         },
                         Keycode::M => {
-                           main_ui.menu.is_opened = !main_ui.menu.is_opened;
+                           main_ui.menu_is_open = !main_ui.menu_is_open;
                         },
                         _ => if let Some(note) = key_board_notes.get(&keycode) {
                             midi_event_sender.send(sequencer::Message::Midi(MidiMessage {

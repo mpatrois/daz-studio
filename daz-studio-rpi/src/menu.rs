@@ -1,15 +1,26 @@
 use sequencer::{sequencer_data::{SequencerData, InstrumentData, Message ,DataBroadcaster}};
 
-
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::fs;
 
+pub const ID_MENU_MAIN : usize = 0;
+pub const ID_MENU_PROJECT : usize = 1;
+
+#[derive(Clone)]
+pub enum Action {
+    OpenMenu(usize),
+    LoadProject(String),
+    SaveProject,
+    Nothing
+}
+
 pub struct MenuItem {
     pub name: String,
     pub value: String,
+    pub action: Action
 }
 
 pub struct Menu {
@@ -19,7 +30,7 @@ pub struct Menu {
 }
 
 impl Menu {
-    pub fn new() -> Menu {
+    pub fn main() -> Menu {
         Menu {
             current: 0,
             is_opened: false,
@@ -27,16 +38,42 @@ impl Menu {
                 MenuItem {
                     name: "Open Project".to_string(),
                     value: ">".to_string(),
+                    action: Action::OpenMenu(ID_MENU_PROJECT),
+                    
                 },
                 MenuItem {
                     name: "Save".to_string(),
                     value: ">".to_string(),
+                    action: Action::SaveProject,
                 },
                 MenuItem {
                     name: "Save as".to_string(),
                     value: ">".to_string(),
+                    action: Action::Nothing,
                 },
             ]
+        }
+    }
+
+    pub fn projects() -> Menu {
+        let mut projects : Vec<MenuItem> = Vec::new();
+
+        fs::create_dir_all("./saves").unwrap();
+        let paths = fs::read_dir("./saves").unwrap();
+
+        for path in paths {
+            let full_path = path.as_ref().unwrap().path().to_str().unwrap().to_string();
+            projects.push(MenuItem {
+                name: path.as_ref().unwrap().file_name().to_str().unwrap().to_string(),
+                value: path.as_ref().unwrap().path().to_str().unwrap().to_string(),
+                action: Action::LoadProject(full_path)
+            });
+        }
+
+        Menu {
+            current: 0,
+            is_opened: false,
+            items: projects
         }
     }
 
@@ -55,15 +92,8 @@ impl Menu {
         }
     }
     
-    pub fn enter(&mut self, data_ui: &mut SequencerData,  broadcaster: &DataBroadcaster) {
-        if self.current == 1 {
-            data_ui.export_to_file("./saves/test.daz".to_string()).unwrap();
-            self.is_opened = false;
-        } else if self.current == 0 {
-            let instruments = data_ui.import_from_file("./saves/test.daz".to_string()).unwrap();
-            broadcaster.send(Message::SetInstruments(instruments));
-            self.is_opened = false;
-        }
+    pub fn enter(&mut self) -> Action {
+        self.items[self.current].action.clone()
     }
 
 }
