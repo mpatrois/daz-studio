@@ -28,6 +28,7 @@ pub struct MoodPreset {
     pub filter_f0: biquad::Hertz<f32>,
     pub filter_q_value: f32,
     pub is_mono: bool,
+    pub modulation_3_to_2_and_1: bool,
 
     pub reverb_enabled: bool,
     pub reverb_params: ReverbParameters,
@@ -53,6 +54,7 @@ impl MoodPreset {
             filter_f0: 10.khz() as biquad::Hertz<f32>,
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
             
             reverb_enabled: false,
             reverb_params: ReverbParameters {

@@ -108,7 +108,7 @@ impl Sequencer {
                 let record_recently = (self.stamp - note_event.stamp_record) < self.data.nb_ticks() / 2;
                 if note_event.tick_off != -1 && (!record_recently || self.data.record_session != note_event.record_session) {
                     if note_event.tick_on == self.data.tick {
-                        self.processors[i].note_on(note_event.note_id, 1.0);
+                        self.processors[i].note_on(note_event.note_id, note_event.velocity);
                     }
                     if note_event.tick_off == self.data.tick {
                         self.processors[i].note_off(note_event.note_id);
@@ -223,6 +223,7 @@ impl Sequencer {
                     note_id,
                     record_session: self.data.record_session,
                     stamp_record: self.stamp,
+                    velocity: velocity as f32 / 127.
                 });
                  self.data.instruments[idx].paired_notes
                     .sort_by(|a, b| a.tick_on.partial_cmp(&b.tick_on).unwrap());

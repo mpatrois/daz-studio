@@ -19,7 +19,7 @@ use embedded_graphics_simulator::{
     SimulatorDisplay
 };
 
-use crate::menu::Menu;
+use crate::menu::{Menu, ID_MENU_MAIN};
 use crate::menu::Action;
 
 pub const SCREEN_WIDTH: u32 = 320;
@@ -108,7 +108,7 @@ impl MainUI {
             .build();
 
         let stroke_rect = PrimitiveStyleBuilder::new()
-            .stroke_color(PLAY_HEAD_COLOR)
+            .stroke_color(PLAY_COLOR)
             .stroke_width(2)
             .build();
 
@@ -130,16 +130,6 @@ impl MainUI {
          {
             let text_style_normal = MonoTextStyle::new(&FONT_8X13, BACKGROUND_COLOR);
             let text_style_active = MonoTextStyle::new(&FONT_8X13, INSTRUMENT_COLOR);
-
-            // let header_rectangle = Rectangle::new(
-            //     Point::new(LEFT_MARGIN, LEFT_MARGIN),
-            //     Size::new(SCREEN_WIDTH - LEFT_MARGIN as u32 * 2, 25)
-            // );
-            // let i = 0;
-            // let menu_items = [
-            //     "Open Project",
-            //     "Save Project",
-            // ];
 
             let mut y = LEFT_MARGIN * 3;
 
@@ -584,13 +574,15 @@ impl MainUI {
                 Action::LoadProject(project_path) => {
                     let instruments = sequencer_data.import_from_file(project_path).unwrap();
                     broadcaster.send(Message::SetInstruments(instruments));
-                    self.menu_is_open = false
+                    self.menu_is_open = false;
+                    self.current_menu = ID_MENU_MAIN;
                 },
                 Action::SaveProject => {
                     sequencer_data.export_to_file("./saves/".to_string() + sequencer_data.project_name.as_str() + ".daz").unwrap();
-                    self.menu_is_open = false
+                    self.menu_is_open = false;
+                    self.current_menu = ID_MENU_MAIN;
                 },
-                _ => (),
+                // _ => (),
             }
         }
     }

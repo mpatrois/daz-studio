@@ -133,7 +133,15 @@ impl MoodVoice {
         let mut out = 0.0;
         while idx < outputs.len() {
             
-            out = self.oscx[OSC_1].tick() + self.oscx[OSC_2].tick() + self.oscx[OSC_3].tick();
+            if self.mood_preset.modulation_3_to_2_and_1 {
+                let modulation = self.oscx[OSC_3].tick();
+                self.oscx[OSC_1].add_phase_offset(modulation);
+                self.oscx[OSC_2].add_phase_offset(modulation);
+    
+                out = self.oscx[OSC_1].tick() + self.oscx[OSC_2].tick();
+            } else {
+                out = self.oscx[OSC_1].tick() + self.oscx[OSC_2].tick() + self.oscx[OSC_3].tick();
+            }
             out = self.biquad_filter.run(out);
             outputs[idx] += out;
             outputs[idx + 1] += out;

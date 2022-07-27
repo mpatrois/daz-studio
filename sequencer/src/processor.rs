@@ -1,4 +1,3 @@
-use crate::midimessage::NoteEvent;
 use crate::preset::Preset;
 
 pub trait Processor {
@@ -7,9 +6,6 @@ pub trait Processor {
     fn all_note_off(&mut self);
     fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize);
     fn prepare(&mut self, sample_rate: f32, num_samples: usize, nb_channels: usize);
-    
-    // fn get_notes_events(&mut self) -> &mut Vec<NoteEvent>;
-    // fn add_notes_event(&mut self, midi_message: NoteEvent);
 
     fn get_name(&self) -> String;
 

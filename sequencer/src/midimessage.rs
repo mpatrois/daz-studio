@@ -17,4 +17,5 @@ pub struct NoteEvent {
     pub tick_off: i32,
     pub record_session: i32,
     pub stamp_record: i32,
+    pub velocity: f32,
 }

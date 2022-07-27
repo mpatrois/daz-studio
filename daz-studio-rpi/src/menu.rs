@@ -1,10 +1,5 @@
-use sequencer::{sequencer_data::{SequencerData, InstrumentData, Message ,DataBroadcaster}};
-
-use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::prelude::*;
 use std::fs;
+use std::path::Path;
 
 pub const ID_MENU_MAIN : usize = 0;
 pub const ID_MENU_PROJECT : usize = 1;
@@ -14,7 +9,7 @@ pub enum Action {
     OpenMenu(usize),
     LoadProject(String),
     SaveProject,
-    Nothing
+    // Nothing
 }
 
 pub struct MenuItem {
@@ -46,11 +41,11 @@ impl Menu {
                     value: ">".to_string(),
                     action: Action::SaveProject,
                 },
-                MenuItem {
-                    name: "Save as".to_string(),
-                    value: ">".to_string(),
-                    action: Action::Nothing,
-                },
+                // MenuItem {
+                //     name: "Save as".to_string(),
+                //     value: ">".to_string(),
+                //     action: Action::Nothing,
+                // },
             ]
         }
     }
@@ -63,11 +58,16 @@ impl Menu {
 
         for path in paths {
             let full_path = path.as_ref().unwrap().path().to_str().unwrap().to_string();
-            projects.push(MenuItem {
-                name: path.as_ref().unwrap().file_name().to_str().unwrap().to_string(),
-                value: path.as_ref().unwrap().path().to_str().unwrap().to_string(),
-                action: Action::LoadProject(full_path)
-            });
+            // if path.unwrap().
+            // println!("{}",full_path);
+            let extension_result = Path::new(&full_path).extension(); 
+            if extension_result.is_some() && extension_result.unwrap().to_str().unwrap().to_string().eq("daz") {
+                projects.push(MenuItem {
+                    name: path.as_ref().unwrap().file_name().to_str().unwrap().to_string(),
+                    value: path.as_ref().unwrap().path().to_str().unwrap().to_string(),
+                    action: Action::LoadProject(full_path)
+                });
+            }
         }
 
         Menu {

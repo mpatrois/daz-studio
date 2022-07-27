@@ -89,9 +89,9 @@ impl SequencerData {
         let mut data = SequencerData {
             project_name: "Project".to_string(),
             tick: 0,
-            tempo: 95.0,
+            tempo: 99.0,
             quantize_idx: 2,
-            bars: 2,
+            bars: 4,
             is_playing: false,
             bpm_has_biped: false,
             volume: 1.,

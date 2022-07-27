@@ -1,5 +1,6 @@
 use biquad::*;
 use biquad::Type;
+use crate::decibels::db_to_gain;
 use crate::mood::mood_preset::MoodPreset;
 use crate::fx::reverb::ReverbParameters;
 
@@ -19,7 +20,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             name: "G-Bass".to_string(),
             oscx_octave_range: [32., 8., 8.],
             oscx_semitone_shift: [0.0, 0.0, 0.0],
-            oscx_volume: [0.8, 0., 0.],
+            oscx_volume: [0.7, 0., 0.],
             oscx_phase_offset: [0., 0., 0.],
             oscx_wave_form: [WAVE_SAW_ANALOGIC_256, WAVE_NONE, WAVE_NONE],
             oscx_adsr_attack: [0.00423, 0.00423, 0.00423],
@@ -28,9 +29,10 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             oscx_adsr_sustain: [1.0, 1.0, 1.0],
             glide: 0.05,
             filter_type: Type::LowPass,
-            filter_f0: 5.khz(),
+            filter_f0: 3.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
             
             reverb_enabled: false,
             reverb_params: ReverbParameters {
@@ -59,6 +61,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             filter_f0: 5.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
 
             reverb_enabled: true,
             reverb_params: ReverbParameters {
@@ -88,6 +91,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             filter_f0: 1.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
 
             reverb_enabled: false,
             reverb_params: ReverbParameters {
@@ -102,20 +106,21 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
         MoodPreset {
             id: 3,
             name: "Guitar Bass".to_string(),
-            oscx_octave_range: [32., 16., 32.],
+            oscx_octave_range: [32., 32., 32.],
             oscx_semitone_shift: [0.0, 0., 0.0],
-            oscx_volume: [0.2, 0.45, 0.7],
-            oscx_phase_offset: [0., 0.6, 0.],
-            oscx_wave_form: [WAVE_SAW_ANALOGIC_4, WAVE_SINE, WAVE_SAW_ANALOGIC_4],
-            oscx_adsr_attack: [0.00423, 0.00423, 0.00423],
-            oscx_adsr_decay: [0.38, 0.969, 60.],
-            oscx_adsr_release: [0.08, 0.08, 0.08],
-            oscx_adsr_sustain: [1.0, 1.0, 1.0],
+            oscx_volume: [db_to_gain(-2.), db_to_gain(-12.), db_to_gain(-20.)],
+            oscx_phase_offset: [0., 0.0, 0.7],
+            oscx_wave_form: [WAVE_SAW_ANALOGIC_4, WAVE_SINE, WAVE_SINE],
+            oscx_adsr_attack: [0.0092, 0.00423, 0.92],
+            oscx_adsr_decay: [2.33, 60., 0.0009],
+            oscx_adsr_release: [0.08, 0.08, 6.],
+            oscx_adsr_sustain: [1.0, 1.0 , db_to_gain(-100.)],
             glide: 0.005,
             filter_type: Type::LowPass,
-            filter_f0: 800.hz(),
+            filter_f0: 1000.hz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: true,
 
             reverb_enabled: false,
             reverb_params: ReverbParameters {
@@ -144,6 +149,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
             
             reverb_enabled: true,
             reverb_params: ReverbParameters {
@@ -172,6 +178,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: true,
+            modulation_3_to_2_and_1: false,
 
             reverb_enabled: true,
             reverb_params: ReverbParameters {
@@ -200,6 +207,7 @@ pub fn get_mood_presets() -> Vec<MoodPreset> {
             filter_f0: 10.khz(),
             filter_q_value: biquad::Q_BUTTERWORTH_F32,
             is_mono: false,
+            modulation_3_to_2_and_1: false,
 
             reverb_enabled: false,
             reverb_params: ReverbParameters {

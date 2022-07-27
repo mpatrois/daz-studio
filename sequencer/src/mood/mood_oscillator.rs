@@ -14,7 +14,8 @@ pub struct MoodOscillator {
     pub glide: f32,
     pub glide_end: f32,
     pub glide_idx: f32,
-    pub adsr: ADSR
+    pub adsr: ADSR,
+    pub phase_offset: f32
 }
 
 impl MoodOscillator {
@@ -29,7 +30,8 @@ impl MoodOscillator {
             glide: 0.,
             glide_end: 0.,
             glide_idx: 0.,
-            adsr: ADSR::new(0., 0., 1.0, 0., sample_rate)
+            adsr: ADSR::new(0., 0., 1.0, 0., sample_rate),
+            phase_offset: 0.0
         }
     }
 
@@ -70,8 +72,24 @@ impl MoodOscillator {
             self.position -= self.mood_wave.mood_wave_samples.len() as f32;
         }
 
-        let pos = self.position as usize;
-        let alpha = self.position - (pos as f32);
+        let mut position = self.position;
+
+        if self.phase_offset != 0.0 {
+            position += self.phase_offset;
+    
+            while position < 0.0 {
+                position += self.mood_wave.mood_wave_samples.len() as f32;
+            }
+    
+            while position >= self.mood_wave.mood_wave_samples.len() as f32 {
+                position -= self.mood_wave.mood_wave_samples.len() as f32;
+            }
+        }
+
+       
+
+        let pos = position as usize;
+        let alpha = position - (pos as f32);
         let inv_alpha = 1.0 - alpha;
 
         let mut interpol_pos = pos + 1;
@@ -86,5 +104,9 @@ impl MoodOscillator {
         self.position += pitch_ratio;
 
         return s * self.volume * self.adsr.tick();
+    }
+
+    pub fn add_phase_offset(&mut self, offset: f32) {
+        self.phase_offset = offset * self.mood_wave.mood_wave_samples.len() as f32;
     }
 }
