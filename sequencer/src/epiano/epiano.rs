@@ -11,6 +11,7 @@ use super::epiano_preset::EpianoPreset;
 const SILENCE : f32 = 0.0001; // voice choking
 const MAX_VOICES: usize = 32;
 
+#[derive(Clone)]
 pub struct Epiano {
     preset_id: usize,
     muffvel: f32,
@@ -50,7 +51,6 @@ pub struct Epiano {
 	presets: Vec<EpianoPreset>,
 
 	pub note_events: Vec<NoteEvent>,
-
 	pub waves: Vec<i16>,
 }
 
@@ -440,14 +440,6 @@ impl Processor for Epiano {
             }
         }
     }
-
-    // fn get_notes_events(&mut self) -> &mut Vec<NoteEvent> {
-    //     return &mut self.note_events;
-    // }
-
-    // fn add_notes_event(&mut self, midi_message: NoteEvent) {
-    //     self.note_events.push(midi_message);
-    // }
 
     fn get_current_preset_id(&self) -> usize {
         self.preset_id

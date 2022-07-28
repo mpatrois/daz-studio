@@ -27,6 +27,7 @@ impl ReverbParameters {
     }
 }
 
+#[derive(Clone)]
 struct CombFilter {
     buffer: Vec<f32>,
     buffer_size: usize,
@@ -78,6 +79,7 @@ impl CombFilter {
     }
 }
 
+#[derive(Clone)]
 struct AllPassFilter {
     buffer: Vec<f32>,
     buffer_size: usize,
@@ -124,6 +126,7 @@ impl AllPassFilter {
     }
 }
 
+#[derive(Clone)]
 struct SmoothedValue {
     current_value: f32,
     target: f32,
@@ -202,6 +205,7 @@ impl SmoothedValue {
     }
 }
 
+#[derive(Clone)]
 pub struct Reverb {
     parameters: ReverbParameters,
     gain: f32,

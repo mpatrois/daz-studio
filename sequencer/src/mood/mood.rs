@@ -12,6 +12,7 @@ use crate::fx::reverb::Reverb;
 
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Mood {
     pub wave_bank: Rc<MoodWaveBank>,
     pub note_events: Vec<NoteEvent>,

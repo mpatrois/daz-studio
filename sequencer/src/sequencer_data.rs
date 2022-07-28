@@ -63,6 +63,7 @@ pub struct InstrumentData {
 pub struct SequencerData {
     pub project_name: String,
     pub tempo: f32,
+    pub sample_rate: f32,
     pub quantize_idx: usize,
     pub tick: i32,
     pub bpm_has_biped: bool,
@@ -80,6 +81,7 @@ pub struct SequencerData {
     pub undo_last_session: bool,
     pub kill_all_notes: bool,
     pub audio_wave_form: Vec<f32>,
+    pub need_to_reload_instruments: bool
 }
 
 impl SequencerData {
@@ -90,6 +92,7 @@ impl SequencerData {
             project_name: "Project".to_string(),
             tick: 0,
             tempo: 99.0,
+            sample_rate: 48_000.,
             quantize_idx: 2,
             bars: 4,
             is_playing: false,
@@ -105,7 +108,8 @@ impl SequencerData {
             record_session: 0,
             undo_last_session: false,
             kill_all_notes: false,
-            audio_wave_form: Vec::new()
+            audio_wave_form: Vec::new(),
+            need_to_reload_instruments: false,
         };
         data.compute_tick_time();
         (data, sender)
@@ -192,6 +196,7 @@ impl SequencerData {
                     self.instruments[idx].rms_right = rms_right;
                 },
                 Message::SetInstruments(instruments) => {
+                    self.need_to_reload_instruments = true;
                     self.instruments = instruments;
                     for instrument in self.instruments.iter_mut() {
                         for note_event in instrument.paired_notes.iter_mut() {

@@ -1,7 +1,5 @@
 use std::fs::File;
-// use std::path::Path;
 use crate::sampler::sampler_preset::SampleInfo;
-// use wav_io::{, header::*, tone};
 
 pub struct Sample {
     pub sample_rate: f32,
@@ -18,7 +16,7 @@ impl Sample {
 
     pub fn empty() -> Sample {
         Sample {
-            sample_rate: 44000.,
+            sample_rate: 48_000.,
             left_channel: Vec::new(),
             right_channel: Vec::new(),
             root_midi_note: 0,

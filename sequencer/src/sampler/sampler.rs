@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 const MAX_NOTES : usize = 32;
 
+#[derive(Clone)]
 pub struct Sampler {
     pub samples: Vec<Rc<Sample>>,
     voices: Vec<SamplerVoice>,

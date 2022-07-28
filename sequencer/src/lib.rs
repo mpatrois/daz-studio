@@ -16,15 +16,17 @@ pub mod sequencer_data;
 pub mod epiano;
 
 use crate::processor::Processor;
-use crate::mood::mood::Mood;
 use crate::metronome::metronome::Metronome;
-use crate::sampler::sampler::Sampler;
 use crate::midimessage::NoteEvent;
 use crate::sequencer_data::SequencerData;
 use crate::sequencer_data::InstrumentData;
 use crate::sequencer_data::Message as SequencerDataMessage;
 use crate::midimessage::MidiMessage;
+
+use crate::sampler::sampler::Sampler;
 use crate::epiano::epiano::Epiano;
+use crate::mood::mood::Mood;
+
 use crate::decibels::root_mean_square_stereo;
 
 use std::sync::mpsc::Sender;
@@ -42,10 +44,13 @@ pub struct Sequencer {
     buffer_size: usize,
     nb_channels: usize,
     processors: Vec<Box<dyn Processor>>,
-    processors_outputs: Vec<Vec<f32>>,
+    processor_outputs: Vec<f32>,
     pub audio_state_senders: Vec<Sender<sequencer_data::Message>>,
     has_new_notes: bool,
     stamp: i32,
+    sampler: Sampler,
+    elec_piano: Epiano,
+    mood: Mood,
 }
 
 impl Sequencer {
@@ -63,24 +68,29 @@ impl Sequencer {
             buffer_size: buffer_size,
             nb_channels: 2,
             processors: Vec::new(),
-            processors_outputs: Vec::new(),
+            processor_outputs: Vec::with_capacity(buffer_size * 2),
             data,
             audio_state_senders: Vec::new(),
             has_new_notes: false,
             stamp: 0,
+            sampler: Sampler::new(sample_rate, 0),
+            mood: Mood::new(sample_rate, 0),
+            elec_piano: Epiano::new(sample_rate),
         };
 
         sequencer.compute_elapsed_time_each_render();
 
-        Epiano::new(sample_rate);
+        for _i in 0..sequencer.processor_outputs.capacity() {
+            sequencer.processor_outputs.push(0.);
+        }
 
-        sequencer.add_processor(Box::new(Epiano::new(sample_rate)));
-        sequencer.add_processor(Box::new(Sampler::new(sample_rate, 1)));
-        sequencer.add_processor(Box::new(Sampler::new(sample_rate, 2)));
-        sequencer.add_processor(Box::new(Mood::new(sample_rate, 0)));
-        sequencer.add_processor(Box::new(Mood::new(sample_rate, 1)));
-        sequencer.add_processor(Box::new(Mood::new(sample_rate, 3)));
-        sequencer.add_processor(Box::new(Mood::new(sample_rate, 4)));
+        sequencer.add_processor(Box::new(sequencer.elec_piano.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.sampler.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.sampler.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.sampler.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.mood.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.mood.clone()), true);
+        sequencer.add_processor(Box::new(sequencer.mood.clone()), true);
 
         return (sequencer, sender);
     }
@@ -142,6 +152,27 @@ impl Sequencer {
     pub fn process(&mut self, outputs: &mut [f32], num_samples: usize, nb_channels: usize) {
         self.data.process_messages();
 
+        if self.data.need_to_reload_instruments {
+            self.data.tick = 0;
+            self.processors.clear();
+            let instruments = self.data.instruments.clone();
+            for instrument in instruments.iter() {
+                if instrument.name == "Elec. Piano" {
+                    let instrument_clone = self.elec_piano.clone();
+                    self.add_processor(Box::new(instrument_clone), false);
+                }
+                if instrument.name == "Sampler" {
+                    let instrument_clone = self.sampler.clone();
+                    self.add_processor(Box::new(instrument_clone), false);
+                }
+                if instrument.name == "Mood" {
+                    let instrument_clone = self.mood.clone();
+                    self.add_processor(Box::new(instrument_clone), false);
+                }
+            }
+            self.data.need_to_reload_instruments = false;
+        }
+
         if self.data.undo_last_session {
             if self.data.instrument_selected_id < self.processors.len() {
                 let mut last_session = -1;
@@ -185,7 +216,7 @@ impl Sequencer {
         self.metronome.process(outputs, num_samples, nb_channels);
         
         for p_index in 0..self.processors.len() {
-            let processor_outputs = &mut self.processors_outputs[p_index];
+            let processor_outputs = &mut self.processor_outputs;
             for s in 0..processor_outputs.len() {
                 processor_outputs[s] = 0.;
             }
@@ -194,8 +225,8 @@ impl Sequencer {
             let [rms_left, rms_right] = root_mean_square_stereo(processor_outputs, num_samples);
             self.data.instruments[p_index].rms_left = rms_left;
             self.data.instruments[p_index].rms_right = rms_right;
-            for i in 0..processor_outputs.len() {
-                outputs[i] += processor_outputs[i] * self.data.instruments[p_index].volume;
+            for i in 0..self.processor_outputs.len() {
+                outputs[i] += self.processor_outputs[i] * self.data.instruments[p_index].volume;
             }
         }
 
@@ -266,29 +297,23 @@ impl Sequencer {
         }
     }
 
-    pub fn add_processor(&mut self, mut processor: Box<dyn Processor>) {
-
-        let nb_samples = self.buffer_size * self.nb_channels;
-        let mut processor_outputs = Vec::with_capacity(self.buffer_size * self.nb_channels);
-
-        for _i in 0..nb_samples {
-            processor_outputs.push(0.);
-        }
+    pub fn add_processor(&mut self, mut processor: Box<dyn Processor>, create_instrument_data: bool) {
 
         processor.prepare(self.sample_rate, self.buffer_size, 2);
         
-        self.data.instruments.push(InstrumentData {
-            name: processor.get_name(),
-            volume: 0.7,
-            current_preset_id: processor.get_current_preset_id(),
-            presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
-            paired_notes: Vec::new(),
-            rms_left: 0.,
-            rms_right: 0.,
-        });
+        if create_instrument_data {
+            self.data.instruments.push(InstrumentData {
+                name: processor.get_name(),
+                volume: 0.7,
+                current_preset_id: processor.get_current_preset_id(),
+                presets: processor.get_presets().iter().map(|preset| preset.get_name()).collect(),
+                paired_notes: Vec::new(),
+                rms_left: 0.,
+                rms_right: 0.,
+            });
+        }
 
         self.processors.push(processor);
-        self.processors_outputs.push(processor_outputs);
     }
 
     fn quantize_tick(&self) -> i32 {
@@ -335,7 +360,6 @@ impl Sequencer {
                 let rms_left = self.data.instruments[i].rms_left;
                 sender.send(SequencerDataMessage::SetRMSInstrument(i, rms_right, rms_left)).unwrap();
             }
-            sender.send(SequencerDataMessage::SetWaveFormData(_outputs.to_vec())).unwrap();
         }
     }
 
